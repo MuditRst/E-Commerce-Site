@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,6 +45,29 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res) =>
     await db.SaveChangesAsync();
     return Results.Created($"/api/orders/{orders.OrderID}",orders);
 }).WithName("PostOrders");
+
+app.MapPut("/api/orders", async (DBContext db, Orders updatedOrder) =>
+{
+    var orders = await db.Orders.FirstOrDefaultAsync(o => o.Item == updatedOrder.Item);
+
+    if (orders == null) return Results.NotFound();
+
+    orders.Quantity = updatedOrder.Quantity;
+    await db.SaveChangesAsync();
+    return Results.Ok(orders);
+
+});
+
+app.MapDelete("/api/orders", async (DBContext db, [FromBody]Orders order) =>
+{
+    var orders = await db.Orders.FirstOrDefaultAsync(o => o.Item == order.Item && o.Quantity == order.Quantity);
+
+    if (orders == null) return Results.NotFound();
+
+    db.Orders.Remove(orders);
+    await db.SaveChangesAsync();
+    return Results.Ok(orders);
+});
 
 app.Run();
 

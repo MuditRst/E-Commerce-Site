@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 
-import { getOrders ,postOrder} from "../api";
+import { deleteOrder, getOrders ,postOrder} from "../api";
 
 function GetOrders(){
     const [orders, setOrders] = useState<Array<{ item: string; quantity: number }>>([]);
-    const [viewMode, setViewMode] = useState<"none"|"showAllOrders"|"addAnOrder">("none");
+    const [viewMode, setViewMode] = useState<"none"|"showAllOrders"|"addAnOrder"|"deleteAnOrder">("none");
 
     useEffect(() => {
         if(viewMode === "showAllOrders") {
@@ -18,8 +18,30 @@ function GetOrders(){
             setViewMode("showAllOrders");
         } else if (event.target.value === "addAnOrder") {
             setViewMode("addAnOrder");
+        }else if (event.target.value === "deleteAnOrder") {
+            setViewMode("deleteAnOrder");
         }else{
             setViewMode("none");
+        }
+    };
+
+    const handleDeleteOrder = async (event:React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const orderName = formData.get("orderName") as string;
+        const quantity = formData.get("quantity") as string;
+
+        if (!orderName || !quantity) {
+            console.error("Order name and quantity are required");
+            return;
+        }
+
+        try {
+
+            const res = await deleteOrder({item: orderName, quantity: Number(quantity)});
+            setViewMode("showAllOrders");
+        } catch (error) {
+            console.error("Error deleting order:", error);
         }
     };
 
@@ -50,6 +72,7 @@ function GetOrders(){
             </option>
             <option value="showAllOrders">Show all Orders</option>
             <option value="addAnOrder">Add an Order</option>
+            <option value="deleteAnOrder">Delete an Order</option>
         </select>
         {viewMode === "showAllOrders" && (
         <div>
@@ -70,6 +93,14 @@ function GetOrders(){
                 <input type="string" name="orderName" placeholder="Order Name" />
                 <input type="number" name="quantity" placeholder="Quantity" />
                 <button type="submit">Add Order</button>
+            </form>
+        ) : null}
+
+        {viewMode === "deleteAnOrder" ? (
+            <form onSubmit={handleDeleteOrder}>
+                <input type="string" name="orderName" placeholder="Order name to delete" />
+                <input type="number" name="quantity" placeholder="Quantity" />
+                <button type="submit">Delete Order</button>
             </form>
         ) : null}
     </div>
