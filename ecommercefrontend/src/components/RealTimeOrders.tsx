@@ -10,8 +10,8 @@ function RealTimeOrders() {
         .withAutomaticReconnect()
         .build();
         connection.start().then(()=> console.log("Connected to SignalR hub")).catch((err) => console.error("SignalR connection failed:", err));
-        connection.on("ReceiveOrder", (orderJSON) => {
-            const order = JSON.parse(orderJSON);
+        connection.on("ReceiveOrder", (orderJson) => {
+            const order = JSON.parse(orderJson);
             setOrders(prevOrders => [order, ...prevOrders]);
         });
 
@@ -25,9 +25,10 @@ function RealTimeOrders() {
         <div>
             <h2>Real-Time Orders</h2>
             <ul>
-                {orders.map((order, index) => (
-                    <li key = {index}>{order.item  } - {order.quantity}</li>
-                ))}
+                {orders.map((order) => {
+                    console.log("Order:", order);
+                    return <li key={order.orderID}>{order.item} - {order.quantity}</li>
+                })}
             </ul>
         </div>
     );

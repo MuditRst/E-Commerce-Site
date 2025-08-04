@@ -1,5 +1,7 @@
+import { Key } from "react";
+
 type Order = {
-    orderId: number;
+    orderID: Key|number;
     item: string;
     quantity: number;
 };

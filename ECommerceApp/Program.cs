@@ -3,6 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Confluent.Kafka;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using BCrypt.Net;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://localhost:5097");
@@ -19,11 +27,48 @@ builder.Services.AddCors(
         });
     }
 );
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
 
 builder.Services.AddDbContext<DBContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        var jwtSettings = builder.Configuration.GetSection("Jwt");
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.ContainsKey("Jwt"))
+                {
+                    context.Token = context.Request.Cookies["Jwt"];
+                }
+                return Task.CompletedTask;
+            }
+        };
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+
 builder.Services.AddSignalR(options => options.EnableDetailedErrors = true);
 builder.Services.AddHostedService<KafkaConsumerService>();
 
@@ -37,6 +82,8 @@ Console.WriteLine($"Kafka topics available: {string.Join(", ", metadata.Topics.S
 
 
 var app = builder.Build();
+
+app.UseHttpsRedirection();
 app.UseRouting();
 
 // Configure the HTTP request pipeline.
@@ -47,9 +94,10 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowedFrontend");
 
 //auth here
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapHub<OrderHub>("/hubs/orders");
-app.UseHttpsRedirection();
 
 app.MapGet("/api/orders", async (DBContext db) =>
 {
@@ -67,25 +115,30 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res) =>
     using var producer = new ProducerBuilder<Null, string>(config).Build();
 
 
-    var message = JsonSerializer.Serialize(orders);
+    var message = JsonSerializer.Serialize(orders, new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    });
+
     await producer.ProduceAsync("order-topic", new Message<Null, string> { Value = message });
     
     Console.WriteLine($"Produced order to Kafka: {message}");
 
     return Results.Created($"/api/orders/{orders.OrderID}", orders);
-}).WithName("PostOrders");
+}).RequireAuthorization().WithName("PostOrders");
 
-app.MapPut("/api/orders", async (DBContext db, Orders updatedOrder) =>
+app.MapPut("/api/orders/{id}", async (int id,DBContext db,  [FromBody] Orders updatedOrder) =>
 {
-    var orders = await db.Orders.FirstOrDefaultAsync(o => o.Item == updatedOrder.Item);
+    var orders = await db.Orders.FindAsync(id);
 
     if (orders == null) return Results.NotFound();
 
+    orders.Item = updatedOrder.Item;
     orders.Quantity = updatedOrder.Quantity;
     await db.SaveChangesAsync();
     return Results.Ok(orders);
 
-});
+}).RequireAuthorization();
 
 app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order) =>
 {
@@ -96,7 +149,74 @@ app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order) =>
     db.Orders.Remove(orders);
     await db.SaveChangesAsync();
     return Results.Ok(orders);
+}).RequireAuthorization();
+
+app.MapGet("/api/user/me", (ClaimsPrincipal user) =>
+{
+    var username = user.Identity?.Name;
+    var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    return Results.Ok(new {  username,userId });
+}).RequireAuthorization();
+
+app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase userToRegister) =>
+{
+    var user = await db.Logins.AnyAsync(u => u.Username == userToRegister.Username);
+    if (user)
+    {
+        return Results.Conflict("User already exists");
+    }
+
+    userToRegister.Password = PasswordHelper.HashPassword(userToRegister.Password);
+    db.Logins.Add(userToRegister);
+    await db.SaveChangesAsync();
+
+    return Results.Ok();
 });
+
+app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody] LoginDatabase user) =>
+{
+    var dbUser = await db.Logins.FirstOrDefaultAsync(u => u.Username == user.Username);
+    if (dbUser == null || !BCrypt.Net.BCrypt.Verify(user.Password, dbUser.Password))
+    {
+        return Results.Unauthorized();
+    }
+
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.NameIdentifier, dbUser.UserID.ToString()),
+        new Claim(ClaimTypes.Name,user.Username)
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var token = new JwtSecurityToken(
+        issuer: jwtSettings["Issuer"],
+        audience: jwtSettings["Audience"],
+        claims: claims,
+        expires: DateTime.Now.AddMinutes(double.Parse(jwtSettings["ExpiresInMinutes"]!)),
+        signingCredentials: creds);
+
+    string jwt = new JwtSecurityTokenHandler().WriteToken(token);
+
+    http.Response.Cookies.Append("Jwt", jwt, new CookieOptions
+    {
+        HttpOnly = true,
+        Secure = !app.Environment.IsDevelopment(),
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTimeOffset.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiresInMinutes"] ?? "60"))
+    });
+
+    return Results.Ok(new { Token = jwt });
+});
+
+app.MapPost("/api/auth/logout", (HttpContext http) =>
+{
+    http.Response.Cookies.Delete("Jwt");
+    return Results.Ok(new { message = "Logged out successfully" });
+});
+
 
 app.MapGet("/", () => "Backend is running ✅");
 
