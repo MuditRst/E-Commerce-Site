@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Authorization;
+using System.Reflection.Metadata.Ecma335;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://localhost:5097");
@@ -105,9 +106,13 @@ app.MapGet("/api/orders", async (DBContext db) =>
     return Results.Ok(orders);
 }).WithName("GetOrders");
 
-app.MapPost("/api/orders", async (DBContext db,OrderRequest res) =>
+app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal claims) =>
 {
-    var orders = new Orders { Item = res.Item, Quantity = res.Quantity };
+    var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
+    if(userIdclaim == null)
+        return Results.Unauthorized();
+    _ = int.TryParse(userIdclaim?.Value, out int userId);
+    var orders = new Orders { Item = res.Item, Quantity = res.Quantity , UserID = userId };
     db.Orders.Add(orders);
     await db.SaveChangesAsync();
 
@@ -127,26 +132,43 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res) =>
     return Results.Created($"/api/orders/{orders.OrderID}", orders);
 }).RequireAuthorization().WithName("PostOrders");
 
-app.MapPut("/api/orders/{id}", async (int id,DBContext db,  [FromBody] Orders updatedOrder) =>
+app.MapPut("/api/orders/{id}", async (int id,DBContext db,  [FromBody] Orders updatedOrder,ClaimsPrincipal claims) =>
 {
+    var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
+    if(userIdclaim == null)
+        return Results.Unauthorized();
+    _ = int.TryParse(userIdclaim?.Value, out int userId);
     var orders = await db.Orders.FindAsync(id);
 
     if (orders == null) return Results.NotFound();
-
-    orders.Item = updatedOrder.Item;
-    orders.Quantity = updatedOrder.Quantity;
+    if (orders.UserID == userId)
+    {
+        orders.Item = updatedOrder.Item;
+        orders.Quantity = updatedOrder.Quantity;
+    }
+    else
+    {
+        return Results.Unauthorized();
+    }
+    
     await db.SaveChangesAsync();
     return Results.Ok(orders);
 
 }).RequireAuthorization();
 
-app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order) =>
+app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order,ClaimsPrincipal claims) =>
 {
+    var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
+    if(userIdclaim == null)
+        return Results.Unauthorized();
+    _ = int.TryParse(userIdclaim?.Value, out int userId);
     var orders = await db.Orders.FirstOrDefaultAsync(o => o.Item == order.Item && o.Quantity == order.Quantity);
 
     if (orders == null) return Results.NotFound();
-
-    db.Orders.Remove(orders);
+    if (orders.UserID == userId)
+        db.Orders.Remove(orders);
+    else
+        return Results.Unauthorized();
     await db.SaveChangesAsync();
     return Results.Ok(orders);
 }).RequireAuthorization();
@@ -177,7 +199,7 @@ app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase 
 app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody] LoginDatabase user) =>
 {
     var dbUser = await db.Logins.FirstOrDefaultAsync(u => u.Username == user.Username);
-    if (dbUser == null || !BCrypt.Net.BCrypt.Verify(user.Password, dbUser.Password))
+    if (dbUser == null || !PasswordHelper.VerifyPassword(dbUser.Password, user.Password))
     {
         return Results.Unauthorized();
     }

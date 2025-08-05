@@ -186,3 +186,5 @@ C:\Users\mmudi\OneDrive\Desktop\E-Commerce Site\ECommerceApp\bin\Debug\net9.0\ru
 C:\Users\mmudi\OneDrive\Desktop\E-Commerce Site\ECommerceApp\bin\Debug\net9.0\runtimes\win-x86\native\vcruntime140.dll
 C:\Users\mmudi\OneDrive\Desktop\E-Commerce Site\ECommerceApp\bin\Debug\net9.0\runtimes\win-x86\native\zlib1.dll
 C:\Users\mmudi\OneDrive\Desktop\E-Commerce Site\ECommerceApp\bin\Debug\net9.0\runtimes\win-x86\native\zstd.dll
+C:\Users\mmudi\OneDrive\Desktop\E-Commerce Site\ECommerceApp\bin\Debug\net9.0\BCrypt.Net-Next.dll
+C:\Users\mmudi\OneDrive\Desktop\E-Commerce Site\ECommerceApp\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

@@ -16,7 +16,7 @@ function Login() {
   var res = await login(loginData.username, loginData.password);
   if (res.status === 200) {
     console.log("Login successful");
-    navigate("/");
+    navigate("/userdashboard");
   } else {
     console.error("Login failed");
     //navigate to error page
@@ -38,7 +38,7 @@ function Login() {
         <button type="submit">Login</button>
       </form>
       <p>Don't have an account? Register here</p>
-      <button onClick={() => navigate("/register")}>Register</button>
+      <button onClick={() => navigate("/register",{state: { fromLogin: true }})}>Register</button>
       <p>Or</p>
       <p>Forgot your password? Reset it here</p>
       <button onClick={() => navigate("/forgot-password")}>Forgot Password</button>
