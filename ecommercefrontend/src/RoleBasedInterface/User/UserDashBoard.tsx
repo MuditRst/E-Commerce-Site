@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 
-import { deleteOrder, getOrders ,postOrder, updateOrder} from "../api";
-import Order from "../Interface/Order";
-import GetOrders from "./CRUD/GetOrders";
-import UpdateOrder from "./CRUD/UpdateOrders";
-import AddOrder from "./CRUD/AddOrder";
+import { deleteOrder, getOrders ,postOrder, updateOrder} from "../../api";
+import Order from "../../Interface/Order";
+import GetOrders from "../../components/CRUD/GetOrders";
+import UpdateOrder from "../../components/CRUD/UpdateOrders";
+import AddOrder from "../../components/CRUD/AddOrder";
 
 function UserDashBoard(){
     const [orders, setOrders] = useState<Order[]>([]);

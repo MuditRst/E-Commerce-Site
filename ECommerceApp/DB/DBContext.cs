@@ -6,6 +6,7 @@ public class DBContext : DbContext
 
     public DbSet<Orders> Orders { get; set; }
     public DbSet<LoginDatabase> Logins { get; set; }
+    public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

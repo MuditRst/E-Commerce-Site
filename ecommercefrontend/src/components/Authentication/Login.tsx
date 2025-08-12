@@ -1,5 +1,5 @@
 import React from "react";
-import { login } from "./LoginAPI";
+import { getUserDetails, login } from "./LoginAPI";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -14,11 +14,16 @@ function Login() {
     password: password,
   };
   var res = await login(loginData.username, loginData.password);
-  if (res.status === 200) {
+  var user = (await getUserDetails()).data;
+  if (res.status === 200 && user.userRole === "User") {
     console.log("Login successful");
     navigate("/userdashboard");
+  }else if(res.status === 200 && user.userRole === "Admin"){
+    console.log("Admin Login successful");
+    navigate("/admindashboard");
   } else {
     console.error("Login failed");
+    console.error("Error:", res);
     //navigate to error page
   }
 };

@@ -1,6 +1,6 @@
 import { useState,useEffect, use } from "react";
 import { HubConnectionBuilder } from "@microsoft/signalr";
-import Order from "../Interface/Order";
+import Order from "../../Interface/Order";
 
 function RealTimeOrders() {
     const [orders, setOrders] = useState<Order[]>([]);

@@ -1,5 +1,6 @@
 import React from "react";
 import Order from "../../Interface/Order";
+import { getUserDetails } from "../Authentication/LoginAPI";
 
 type AddOrderProps = {
   orderToAdd?: Order;
@@ -18,10 +19,17 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
       return;
     }
 
+    const userDetailsResponse = await getUserDetails();
+    const userDetails = userDetailsResponse?.data;
+
     const newOrder: Order = {
       orderID: orderToAdd?.orderID ?? 0,
       item,
       quantity,
+      user: {
+        userID: userDetails?.userID,
+        username: userDetails?.username
+      }
     };
 
     await handleAddOrder(newOrder);

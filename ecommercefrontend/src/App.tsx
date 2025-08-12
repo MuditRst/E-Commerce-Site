@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import RealTimeOrders from "./components/RealTimeOrders";
-import UserDashBoard from "./components/UserDashBoard";
+import UserDashBoard from "./RoleBasedInterface/User/UserDashBoard";
 import Login from "./components/Authentication/Login";
 import ProtectedRoute from "./components/Routing/ProtectedRoute";
 import Register from "./components/Authentication/Register";
+import AdminDashBoard from "./RoleBasedInterface/Admin/AdminDashBoard";
+import ErrorPage from "./components/ErrorPage/Error";
 
 function App() {
   return (
@@ -23,13 +24,15 @@ function App() {
           }
         />
         <Route
-          path="/realtimeorders"
+          path="/admindashboard"
           element={
-            <ProtectedRoute>
-              <RealTimeOrders />
+            <ProtectedRoute requiredRole="Admin">
+              <AdminDashBoard />
             </ProtectedRoute>
           }
         />
+        <Route path="/unauthorized" element={<ErrorPage message="You do not have permission to access this page." />} />
+        <Route path="*" element={<ErrorPage message="404 - Page Not Found" />} />
       </Routes>
     </Router>
   );

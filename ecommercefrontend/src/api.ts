@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Orderstatus } from "./Interface/OrderStatus";
 
 const API = axios.create({
   baseURL: "http://localhost:5097",
@@ -21,3 +22,5 @@ export const deleteOrder = async (order: { item: string; quantity: number }) => 
 };
 
 export const updateOrder = (id: number, data: any) => API.put(`api/orders/${id}`, data,{withCredentials: true});
+
+export const updateOrderStatus = (id: number, orderStatus: Orderstatus) => API.put(`/api/orders/${id}/status`, Number(orderStatus), { headers : { "Content-Type": "application/json" }, withCredentials: true });

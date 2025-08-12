@@ -102,7 +102,17 @@ app.MapHub<OrderHub>("/hubs/orders");
 
 app.MapGet("/api/orders", async (DBContext db) =>
 {
-    var orders = await db.Orders.ToListAsync();
+    var orders = await db.Orders.Select(
+        o => new
+        {
+            o.OrderID,
+            o.Item,
+            o.Quantity,
+            OrderStatus = o.OrderStatus.ToString(),
+            o.UserID,
+            User = o.User != null ? o.User.Username : null
+        }
+    ).ToListAsync();
     return Results.Ok(orders);
 }).WithName("GetOrders");
 
@@ -112,7 +122,7 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal 
     if(userIdclaim == null)
         return Results.Unauthorized();
     _ = int.TryParse(userIdclaim?.Value, out int userId);
-    var orders = new Orders { Item = res.Item, Quantity = res.Quantity , UserID = userId };
+    var orders = new Orders { Item = res.Item, Quantity = res.Quantity , UserID = userId,OrderStatus = 0 };
     db.Orders.Add(orders);
     await db.SaveChangesAsync();
 
@@ -132,10 +142,10 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal 
     return Results.Created($"/api/orders/{orders.OrderID}", orders);
 }).RequireAuthorization().WithName("PostOrders");
 
-app.MapPut("/api/orders/{id}", async (int id,DBContext db,  [FromBody] Orders updatedOrder,ClaimsPrincipal claims) =>
+app.MapPut("/api/orders/{id}", async (int id, DBContext db, [FromBody] Orders updatedOrder, ClaimsPrincipal claims) =>
 {
     var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
-    if(userIdclaim == null)
+    if (userIdclaim == null)
         return Results.Unauthorized();
     _ = int.TryParse(userIdclaim?.Value, out int userId);
     var orders = await db.Orders.FindAsync(id);
@@ -150,11 +160,30 @@ app.MapPut("/api/orders/{id}", async (int id,DBContext db,  [FromBody] Orders up
     {
         return Results.Unauthorized();
     }
-    
+
     await db.SaveChangesAsync();
     return Results.Ok(orders);
 
 }).RequireAuthorization();
+
+app.MapPut("/api/orders/{id}/status", async (int id, DBContext db, [FromBody] OrderStatus newStatus, ClaimsPrincipal user) =>
+{
+    var order = await db.Orders.FindAsync(id);
+    if (order == null) return Results.NotFound();
+
+    db.OrderStatusHistories.Add(new OrderStatusHistory
+    {
+        OrderID = order.OrderID,
+        OrderStatus = newStatus,
+        ChangedBy = user.Identity?.Name,
+        ChangedAt = DateTime.UtcNow
+    });
+
+    order.OrderStatus = newStatus;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(order);
+});
 
 app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order,ClaimsPrincipal claims) =>
 {
@@ -177,8 +206,9 @@ app.MapGet("/api/user/me", (ClaimsPrincipal user) =>
 {
     var username = user.Identity?.Name;
     var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    var userRole = user.FindFirst(ClaimTypes.Role)?.Value;
 
-    return Results.Ok(new {  username,userId });
+    return Results.Ok(new { username, userId, userRole });
 }).RequireAuthorization();
 
 app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase userToRegister) =>
@@ -207,7 +237,8 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
     var claims = new[]
     {
         new Claim(ClaimTypes.NameIdentifier, dbUser.UserID.ToString()),
-        new Claim(ClaimTypes.Name,user.Username)
+        new Claim(ClaimTypes.Name,user.Username),
+        new Claim(ClaimTypes.Role,dbUser.Role)
     };
 
     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
