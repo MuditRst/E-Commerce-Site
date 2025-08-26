@@ -1,11 +1,12 @@
 import axios from "axios";
+import { Orderstatus } from "./Interface/OrderStatus";
 
 const API = axios.create({
   baseURL: "http://localhost:5097",
 });
 
 
-export const postOrder = (data : any) => API.post("api/orders", data);
+export const postOrder = (data : any) => API.post("api/orders", data,{withCredentials: true});
 
 export const getOrders = () => API.get("api/orders");
 
@@ -16,7 +17,18 @@ export const deleteOrder = async (order: { item: string; quantity: number }) => 
       "Content-Type": "application/json",
     },
     body: JSON.stringify(order),
+    credentials: "include",
   });
 };
 
-export const updateOrder = (id: number, data: any) => API.put(`api/orders/${id}`, data);
+export const updateOrder = (id: number, data: any) => API.put(`api/orders/${id}`, data,{withCredentials: true});
+
+export const updateOrderStatus = (id: number, orderStatus: Orderstatus) => API.put(`/api/orders/${id}/status`, Number(orderStatus), { headers : { "Content-Type": "application/json" }, withCredentials: true });
+
+export const getUsers = () => API.get("api/users", { withCredentials: true });
+
+export const deleteUser = (id: number) => API.delete(`api/users/${id}`, { withCredentials: true });
+
+export const getKafkalogs = () => API.get("api/kafka/logs", { withCredentials: true });
+
+export const getStats = () => API.get("api/orders/stats", { withCredentials: true });

@@ -1,5 +1,8 @@
+using System.Data.Common;
+using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 public class KafkaConsumerService : BackgroundService
 {
@@ -37,7 +40,35 @@ public class KafkaConsumerService : BackgroundService
                     Console.WriteLine($"Received: {result.Message.Value}");
 
                     using var scope = serviceProvider.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<DBContext>();
                     var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<OrderHub>>();
+
+                    db.KafkaLogs.Add(new KafkaLog
+                    {
+                        Topic = result.Topic,
+                        Message = result.Message.Value,
+                        Timestamp = DateTime.UtcNow   
+                    });
+
+                    var order = JsonSerializer.Deserialize<Orders>(result.Message.Value);
+                    if (order != null)
+                    {
+                        order.User = null;
+                        if (await db.Logins.AnyAsync(u => u.UserID == order.UserID, cancellationToken: cancellationToken))
+                        {
+                            var existing = await db.Orders.FirstOrDefaultAsync(o => o.OrderID == order.OrderID, cancellationToken);
+                            if (existing == null)
+                            {
+                                db.Orders.Add(order);
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Skipping order {order.OrderID} - UserID {order.UserID} not found");
+                        }
+                    }
+
+                    await db.SaveChangesAsync(cancellationToken);
 
                     await hubContext.Clients.All.SendAsync("ReceiveOrder", result.Message.Value, cancellationToken: cancellationToken);
                 }
