@@ -1,8 +1,10 @@
 import React, { useState, useEffect, use } from "react";
-import { deleteOrder, getOrders, postOrder, updateOrder, updateOrderStatus } from "../../api";
+import { getOrders, updateOrderStatus } from "../../api";
 import Order from "../../Interface/Order";
-import { Orderstatus } from "../../Interface/OrderStatus";
 import RealTimeOrders from "./RealTimeOrders";
+import UserListActions from "./UserListActions";
+import KafkaLogsDashboard from "./KafkaLogsDashboard";
+import "../../components/styles/Admindashboard.css";
 
 
 function AdminDashBoard() {
@@ -26,41 +28,72 @@ function AdminDashBoard() {
     }, []);
 
     return (
-    <div>
+    <div className="admin-dashboard">
       <h2>Admin Dashboard</h2>
-      <ul>
-        {orders.map((order) => (
-          <li key={order.orderID}>
-            Order ID: {order.orderID}, Item: {order.item}, Quantity: {order.quantity}, Status: {order.orderStatus}, User: {order.user.toString()}
-            
-            <select
-                value={statusInputs[Number(order.orderID)] ?? order.orderStatus}
-                onChange={(e) => handleStatusChange(Number(order.orderID), e.target.value)}
-            >
-               <option value={0}>Created</option>
-               <option value={1}>Pending</option>
-               <option value={2}>Processing</option>
-               <option value={3}>Completed</option>
-               <option value={4}>Cancelled</option>
-            </select>
 
-            <button
-              onClick={() => {
-                console.log("Updating Order Status:", {
-                  orderID: Number(order.orderID),
-                  newStatus: Number(statusInputs[Number(order.orderID)]),
-                });
-                updateOrderStatus(Number(order.orderID), Number(statusInputs[Number(order.orderID)]));
-                window.location.reload();
-              }}
-            >
-              Update Order Status
-            </button>
-          </li>
-        ))}
-      </ul>
-      <RealTimeOrders />
-    </div>
+      <div className="orders-panel">
+        <ul>
+          {orders.map((order) => (
+            <li key={order.orderID}>
+              <div className="order-meta">
+                <span className="chip">ID: {order.orderID}</span>
+                <span className="chip">Item: {order.item}</span>
+                <span className="chip">Qty: {order.quantity}</span>
+                <span className="chip status">{order.orderStatus}</span>
+                <span className="chip">User: {order.user?.toString()}</span>
+              </div>
+
+              <div className="order-actions">
+                <select
+                  value={statusInputs[Number(order.orderID)] ?? order.orderStatus}
+                  onChange={(e) => handleStatusChange(Number(order.orderID), e.target.value)}
+                >
+                  <option value={0}>Created</option>
+                  <option value={1}>Pending</option>
+                  <option value={2}>Processing</option>
+                  <option value={3}>Completed</option>
+                  <option value={4}>Cancelled</option>
+                </select>
+
+                <button
+                  onClick={() => {
+                    console.log("Updating Order Status:", {
+                      orderID: Number(order.orderID),
+                      newStatus: Number(statusInputs[Number(order.orderID)]),
+                    });
+                    updateOrderStatus(
+                      Number(order.orderID),
+                      Number(statusInputs[Number(order.orderID)])
+                    );
+                    window.location.reload();
+                  }}
+                >
+                  Update Order Status
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="grid cols-2">
+        <div className="section">
+          <h3>User Actions</h3>
+          <UserListActions />
+        </div>
+        <div className="section">
+          <h3>Kafka Logs</h3>
+          <KafkaLogsDashboard />
+        </div>
+      </div>
+
+      <div className="grid cols-2" style={{ marginTop: "20px" }}>
+        <div className="section">
+          <h3>Real-Time Orders</h3>
+          <RealTimeOrders />
+        </div>
+        </div>
+      </div>
     );
 }
 

@@ -1,52 +1,72 @@
 import React from "react";
 import { getUserDetails, login } from "./LoginAPI";
-import axios from "axios";
+import "../styles/Login.css";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
   const navigate = useNavigate();
-  const HandleLogin = async (event:React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
-  const username = event.currentTarget.username.value;
-  const password = event.currentTarget.password.value;
-  var loginData = {
-    username: username,
-    password: password,
+
+  const HandleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const username = event.currentTarget.username.value;
+    const password = event.currentTarget.password.value;
+
+    try {
+      const res = await login(username, password);
+
+      if (res.status === 200) {
+        const { role } = res.data;
+        if (role === "User") {
+          console.log("Login successful as User");
+          navigate("/userdashboard");
+        } else if (role === "Admin") {
+          console.log("Login successful as Admin");
+          navigate("/admindashboard");
+        } else {
+          console.error("Unknown role:", role);
+          navigate("/unauthorized");
+        }
+      } else {
+        console.error("Login failed:", res.status);
+      }
+    } catch (error) {
+      console.error("Error occurred during login:", error);
+      navigate("/error");
+    }
   };
-  var res = await login(loginData.username, loginData.password);
-  var user = (await getUserDetails()).data;
-  if (res.status === 200 && user.userRole === "User") {
-    console.log("Login successful");
-    navigate("/userdashboard");
-  }else if(res.status === 200 && user.userRole === "Admin"){
-    console.log("Admin Login successful");
-    navigate("/admindashboard");
-  } else {
-    console.error("Login failed");
-    console.error("Error:", res);
-    //navigate to error page
-  }
-};
 
   return (
-    <div>
-      <h1>Login Page</h1>
-      <form onSubmit={HandleLogin}>
-        <div>
-          <label htmlFor="username">Username:</label>
-          <input type="text" id="username" name="username" required />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input type="password" id="password" name="password" required />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-      <p>Don't have an account? Register here</p>
-      <button onClick={() => navigate("/register",{state: { fromLogin: true }})}>Register</button>
-      <p>Or</p>
-      <p>Forgot your password? Reset it here</p>
-      <button onClick={() => navigate("/forgot-password")}>Forgot Password</button>
+    <div className="login-container">
+      <div className="login-box">
+        <h1>Login</h1>
+        <form onSubmit={HandleLogin}>
+          <div>
+            <label htmlFor="username">Username</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+          <div>
+            <label htmlFor="password">Password</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+          <button type="submit">Login</button>
+        </form>
+
+        <p>Don't have an account?</p>
+        <button
+          className="link-btn"
+          onClick={() => navigate("/register", { state: { fromLogin: true } })}
+        >
+          Register
+        </button>
+
+        <p>Forgot your password?</p>
+        <button
+          className="link-btn"
+          onClick={() => navigate("/forgetpassword")}
+        >
+          Reset Password
+        </button>
+      </div>
     </div>
   );
 }

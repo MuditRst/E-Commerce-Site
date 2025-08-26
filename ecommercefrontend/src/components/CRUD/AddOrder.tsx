@@ -28,7 +28,8 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
       quantity,
       user: {
         userID: userDetails?.userID,
-        username: userDetails?.username
+        username: userDetails?.username,
+        role: userDetails?.userRole
       }
     };
 

@@ -1,7 +1,8 @@
-import axios from "axios";
+
 import { useNavigate,useLocation } from "react-router-dom";
 import { register } from "./LoginAPI";
-import { use, useEffect } from "react";
+import { useEffect } from "react";
+import "../styles/Login.css";
 
 function Register() {
     const navigate = useNavigate();
@@ -33,12 +34,41 @@ function Register() {
   };
 
   return (
-    <form onSubmit={handleRegister}>
-      <input type="text" name="username" placeholder="Username" required />
-      <input type="password" name="password" placeholder="Password" required />
-      <input type="password" name="confirmPassword" placeholder="Confirm Password" required />
-      <button type="submit">Register</button>
-    </form>
+    <div className="login-container">
+      <div className="login-box">
+        <h1>Register</h1>
+        <form onSubmit={handleRegister}>
+          <div>
+            <label htmlFor="username">Username</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+
+          <div>
+            <label htmlFor="password">Password</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+          <div>
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              required
+            />
+          </div>
+
+          <button type="submit">Register</button>
+        </form>
+
+        <p>Already have an account?</p>
+        <button
+          className="link-btn"
+          onClick={() => navigate("/login")}
+        >
+          Login
+        </button>
+      </div>
+    </div>
   );
 }
 

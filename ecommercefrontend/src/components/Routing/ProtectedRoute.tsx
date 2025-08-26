@@ -18,7 +18,7 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
       .then((user) => {
         if (!isMounted) return;
 
-        if (requiredRole && user.data.userRole !== requiredRole) {
+        if (requiredRole && user.data.role !== requiredRole) {
           navigate("/unauthorized");
           return;
         }

@@ -12,6 +12,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Authorization;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.AspNetCore.Identity.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://localhost:5097");
@@ -100,6 +101,8 @@ app.UseAuthorization();
 
 app.MapHub<OrderHub>("/hubs/orders");
 
+// Orders CRUD endpoints
+
 app.MapGet("/api/orders", async (DBContext db) =>
 {
     var orders = await db.Orders.Select(
@@ -185,10 +188,10 @@ app.MapPut("/api/orders/{id}/status", async (int id, DBContext db, [FromBody] Or
     return Results.Ok(order);
 });
 
-app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order,ClaimsPrincipal claims) =>
+app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order, ClaimsPrincipal claims) =>
 {
     var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
-    if(userIdclaim == null)
+    if (userIdclaim == null)
         return Results.Unauthorized();
     _ = int.TryParse(userIdclaim?.Value, out int userId);
     var orders = await db.Orders.FirstOrDefaultAsync(o => o.Item == order.Item && o.Quantity == order.Quantity);
@@ -202,13 +205,36 @@ app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order,Claims
     return Results.Ok(orders);
 }).RequireAuthorization();
 
+// Kafka|SignalR endpoints
+
+app.MapGet("/api/kafka/logs", async(DBContext db,ClaimsPrincipal claims)=>
+{
+    var userRole = claims.FindFirst(ClaimTypes.Role)?.Value;
+
+    if (userRole != "Admin")
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    var kafkalogs = await db.KafkaLogs.ToListAsync();
+
+    if (kafkalogs == null)
+    {
+        return Results.NotFound("No Kafka logs found");
+    }
+
+    return Results.Ok(kafkalogs);
+});
+
+// User Authentication and Authorization endpoints
+
 app.MapGet("/api/user/me", (ClaimsPrincipal user) =>
 {
     var username = user.Identity?.Name;
     var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     var userRole = user.FindFirst(ClaimTypes.Role)?.Value;
 
-    return Results.Ok(new { username, userId, userRole });
+    return Results.Ok(new { username, userId, role = userRole });
 }).RequireAuthorization();
 
 app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase userToRegister) =>
@@ -228,16 +254,31 @@ app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase 
 
 app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody] LoginDatabase user) =>
 {
+    http.Response.Cookies.Append("Jwt", "", new CookieOptions
+    {
+        Expires = DateTimeOffset.UtcNow.AddDays(-1),
+        HttpOnly = true,
+        Secure = !app.Environment.IsDevelopment(),
+        SameSite = SameSiteMode.Strict
+    });
+
     var dbUser = await db.Logins.FirstOrDefaultAsync(u => u.Username == user.Username);
     if (dbUser == null || !PasswordHelper.VerifyPassword(dbUser.Password, user.Password))
     {
+        http.Response.Cookies.Append("Jwt", "", new CookieOptions
+        {
+            Expires = DateTimeOffset.UtcNow.AddDays(-1),
+            HttpOnly = true,
+            Secure = !app.Environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict
+        });
         return Results.Unauthorized();
     }
 
     var claims = new[]
     {
         new Claim(ClaimTypes.NameIdentifier, dbUser.UserID.ToString()),
-        new Claim(ClaimTypes.Name,user.Username),
+        new Claim(ClaimTypes.Name,dbUser.Username),
         new Claim(ClaimTypes.Role,dbUser.Role)
     };
 
@@ -261,7 +302,64 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
         Expires = DateTimeOffset.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiresInMinutes"] ?? "60"))
     });
 
-    return Results.Ok(new { Token = jwt });
+    return Results.Ok(new { Token = jwt ,dbUser.Username, dbUser.UserID, dbUser.Role});
+});
+
+app.MapPut("/api/auth/forgetpassword", async (DBContext db, [FromBody] LoginDatabase ResetUser) =>
+{
+    var user = await db.Logins.FirstOrDefaultAsync(u => u.Username == ResetUser.Username);
+
+    if (user == null)
+    {
+        return Results.NotFound("User not found");
+    }
+
+    //TODO: Token based reset password for security
+
+    user.Password = PasswordHelper.HashPassword(ResetUser.Password);
+
+    await db.SaveChangesAsync();
+    return Results.Ok("Password Changed Successfully");
+});
+
+app.MapGet("/api/users", async (DBContext db) =>
+{
+    var users = await db.Logins.Select(u =>
+    new
+    {
+        u.UserID,
+        u.Username,
+        u.Role
+
+    }).ToListAsync();
+    if (users == null)
+    {
+        return Results.NotFound("No users Found");
+    }
+
+    return Results.Ok(users);
+});
+
+app.MapDelete("/api/users/{id}", async (int id,DBContext db, ClaimsPrincipal claims) =>
+{
+    var userRole = claims.FindFirst(ClaimTypes.Role)?.Value.ToString();
+
+    if (userRole != "Admin")
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    var user = await db.Logins.FindAsync(id);
+
+    if (user == null)
+    {
+        return Results.NotFound("User Not Found");
+    }
+
+    db.Logins.Remove(user);
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new {Message = "User deleted successfully"});
 });
 
 app.MapPost("/api/auth/logout", (HttpContext http) =>
@@ -270,6 +368,15 @@ app.MapPost("/api/auth/logout", (HttpContext http) =>
     return Results.Ok(new { message = "Logged out successfully" });
 });
 
+
+//charts endpoint
+
+app.MapGet("/api/orders/stats", async(DBContext db)=>
+{
+    var stats = await db.Orders.GroupBy(o => o.OrderStatus).Select(g => new { Status = g.Key.ToString(), Count = g.Count() }).ToListAsync();
+
+    return Results.Ok(stats);
+}).RequireAuthorization();
 
 app.MapGet("/", () => "Backend is running ✅");
 

@@ -5,7 +5,7 @@ const API = axios.create({
 });
 
 export const login = (username: string, password: string) => {
-  return API.post("api/auth/login", { username, password },{withCredentials: true});
+  return API.post("api/auth/login", { username, password }, {withCredentials:true});
 };
 
 export const register = (username: string, password: string) => {
@@ -13,5 +13,13 @@ export const register = (username: string, password: string) => {
 };
 
 export const getUserDetails = () => {
-  return API.get("api/user/me", { withCredentials: true });
+  return API.get("/api/user/me" , {withCredentials : true});
+};
+
+export const logout = () => {
+  return API.post("/api/auth/logout", {}, { withCredentials: true });
+}
+
+export const resetPassword = (username: string, newPassword: string) => {
+  return API.put(`/api/auth/forgetpassword`, { username, newPassword });
 };

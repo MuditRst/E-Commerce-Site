@@ -5,6 +5,7 @@ import Order from "../../Interface/Order";
 import GetOrders from "../../components/CRUD/GetOrders";
 import UpdateOrder from "../../components/CRUD/UpdateOrders";
 import AddOrder from "../../components/CRUD/AddOrder";
+import "../../components/styles/userDashboard.css";
 
 function UserDashBoard(){
     const [orders, setOrders] = useState<Order[]>([]);
@@ -72,20 +73,25 @@ function UserDashBoard(){
     };
 
     return (
-    <div style={{ padding: "1rem" }}>
+    <div className="user-dashboard">
+        <h2>Dashboard</h2>
         <button onClick={() => setViewMode("addAnOrder")}>Add Order</button>
         {viewMode === "showAllOrders" && (
-        <div>
+        <div className="orders-list">
             <GetOrders handleDeleteOrder={handleDeleteOrder} handleUpdateOrder={handleEditClick} />
         </div>
       )}
 
-        {viewMode === "addAnOrder" ? (
-            <AddOrder handleAddOrder={OnAddHandler}/>
-        ) : null}
+        {viewMode === "addAnOrder" && (
+            <div className="form-container">
+                <AddOrder handleAddOrder={OnAddHandler}/>
+            </div>
+        )}
 
         {viewMode === "editOrder" && (
-            <UpdateOrder orderToEdit={editOrder} handleUpdateOrder={handleUpdateSubmit} />
+            <div className="form-container">
+                <UpdateOrder orderToEdit={editOrder} handleUpdateOrder={handleUpdateSubmit} />
+            </div>
         )}
         </div>
     );

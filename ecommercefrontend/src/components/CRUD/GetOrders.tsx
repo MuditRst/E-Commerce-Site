@@ -14,18 +14,29 @@ function GetOrders({ handleDeleteOrder, handleUpdateOrder }: GetOrdersProps) {
         getOrders().then(res => {setOrders(res.data)}).catch(console.error);
     }, []);
     return (
-        <div>
-        <h3>Orders:</h3>
-            <ul>
-                {orders.map((order : Order, index) => (
-                    <li key={order.orderID ?? index}>
-                        {order.item} - {order.quantity}{" "}
-                        <button onClick={() => handleDeleteOrder(order)}>Delete</button>
-                        <button onClick={() => handleUpdateOrder(order)}>Edit</button>
-                    </li>
-                ))}
-            </ul>
-        </div>
+        <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {orders.map(order => (
+          <tr key={order.orderID}>
+            <td>{order.item}</td>
+            <td>{order.quantity}</td>
+            <td>{order.orderStatus}</td>
+            <td className="action-buttons">
+              <button onClick={() => handleUpdateOrder(order)}>Edit</button>
+              <button className="delete" onClick={() => handleDeleteOrder(order)}>Delete</button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
     );
 }
 
