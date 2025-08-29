@@ -1,5 +1,5 @@
 import React from "react";
-import { getUserDetails, login } from "./LoginAPI";
+import {  login } from "./LoginAPI";
 import "../styles/Login.css";
 import { useNavigate } from "react-router-dom";
 
