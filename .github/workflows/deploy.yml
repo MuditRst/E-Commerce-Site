@@ -58,7 +58,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "ecommercefrontend"
-          output_location: "ecommercefrontend/build"
+          output_location: "build"
           
       - name: Set CosmosDB Connection String in Azure App Settings
         uses: azure/appservice-settings@v1
