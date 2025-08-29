@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5097",
+  baseURL: process.env.REACT_APP_API_URL,
+  withCredentials: true,
 });
 
 export const login = (username: string, password: string) => {
