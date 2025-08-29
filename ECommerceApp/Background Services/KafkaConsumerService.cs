@@ -1,76 +1,85 @@
-using System.Data.Common;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Azure.Cosmos;
 
 public class KafkaConsumerService : BackgroundService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IConfiguration configuration;
+    private readonly CosmosClient cosmosClient;
+    private Container ordersContainer;
+    private Container logsContainer;
 
-    public KafkaConsumerService(IServiceProvider serviceProvider, IConfiguration configuration)
+    public KafkaConsumerService(IServiceProvider serviceProvider, IConfiguration configuration, CosmosClient cosmosClient)
     {
         this.serviceProvider = serviceProvider;
         this.configuration = configuration;
+        this.cosmosClient = cosmosClient;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        await Task.Yield();
+        var db = await cosmosClient.CreateDatabaseIfNotExistsAsync("ordersdb");
+        var ordersResponse = await db.Database.CreateContainerIfNotExistsAsync("orders", "/userId");
+        var logsResponse = await db.Database.CreateContainerIfNotExistsAsync("kafkalogs", "/topic");
+
+        ordersContainer = ordersResponse.Container;
+        logsContainer = logsResponse.Container;
+
+        await base.StartAsync(cancellationToken);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var config = new ConsumerConfig
+        {
+            BootstrapServers = configuration["Kafka:BootstrapServers"] ?? "localhost:9092",
+            GroupId = "order-consumer-group",
+            AutoOffsetReset = AutoOffsetReset.Earliest
+        };
+
+        using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
+        consumer.Subscribe(configuration["Kafka:Topic"] ?? "order-topic");
+
+        Console.WriteLine("Kafka Consumer started. Listening to topic...");
+
         try
         {
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = "localhost:9092",
-                GroupId = "order-consumer-group",
-                AutoOffsetReset = AutoOffsetReset.Earliest
-            };
-
-            using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-            await Task.Run(() => consumer.Subscribe("order-topic"),cancellationToken);
-
-            Console.WriteLine("Kafka Consumer started. Listening to 'order-topic'...");
-
-            while (!cancellationToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    var result = consumer.Consume(cancellationToken);
+                    var result = consumer.Consume(stoppingToken);
                     Console.WriteLine($"Received: {result.Message.Value}");
 
-                    using var scope = serviceProvider.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<DBContext>();
-                    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<OrderHub>>();
-
-                    db.KafkaLogs.Add(new KafkaLog
+                    var logDoc = new
                     {
-                        Topic = result.Topic,
-                        Message = result.Message.Value,
-                        Timestamp = DateTime.UtcNow   
-                    });
+                        id = Guid.NewGuid().ToString(),
+                        topic = result.Topic,
+                        message = result.Message.Value,
+                        timestamp = DateTime.UtcNow
+                    };
+                    await logsContainer.CreateItemAsync(logDoc, new PartitionKey(logDoc.topic), cancellationToken: stoppingToken);
 
-                    var order = JsonSerializer.Deserialize<Orders>(result.Message.Value);
+                    var order = JsonSerializer.Deserialize<Orders>(
+                        result.Message.Value,
+                        new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } }
+                    );
+
                     if (order != null)
                     {
-                        order.User = null;
-                        if (await db.Logins.AnyAsync(u => u.UserID == order.UserID, cancellationToken: cancellationToken))
-                        {
-                            var existing = await db.Orders.FirstOrDefaultAsync(o => o.OrderID == order.OrderID, cancellationToken);
-                            if (existing == null)
-                            {
-                                db.Orders.Add(order);
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Skipping order {order.OrderID} - UserID {order.UserID} not found");
-                        }
+                        order.ID = order.ID;
+                        order.UserId = order.UserId;
+
+                        await ordersContainer.UpsertItemAsync(order, new PartitionKey(order.UserId), cancellationToken: stoppingToken);
+                        Console.WriteLine($"Order {order.ID} saved to CosmosDB (User {order.UserId})");
                     }
 
-                    await db.SaveChangesAsync(cancellationToken);
-
-                    await hubContext.Clients.All.SendAsync("ReceiveOrder", result.Message.Value, cancellationToken: cancellationToken);
+                    using var scope = serviceProvider.CreateScope();
+                    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<OrderHub>>();
+                    await hubContext.Clients.All.SendAsync("ReceiveOrder", result.Message.Value, cancellationToken: stoppingToken);
                 }
                 catch (ConsumeException ce)
                 {
@@ -78,9 +87,9 @@ public class KafkaConsumerService : BackgroundService
                 }
             }
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            Console.WriteLine($"Kafka Error: {ex.Message}");
+            consumer.Close();
         }
     }
 }

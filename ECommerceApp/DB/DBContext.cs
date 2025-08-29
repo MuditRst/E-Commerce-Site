@@ -11,11 +11,20 @@ public class DBContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<LoginDatabase>()
-            .HasMany(u => u.Orders)
-            .WithOne(o => o.User)
-            .HasForeignKey(o => o.UserID)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Orders>().ToContainer("Orders")
+                .HasPartitionKey(o => o.UserId) 
+                .HasNoDiscriminator(); 
+
+            modelBuilder.Entity<LoginDatabase>().ToContainer("Users")
+                .HasPartitionKey(u => u.Username)
+                .HasNoDiscriminator();
+
+            modelBuilder.Entity<KafkaLog>().ToContainer("KafkaLogs")
+                .HasPartitionKey(k => k.Topic) 
+                .HasNoDiscriminator();
+           modelBuilder.Entity<OrderStatusHistory>().ToContainer("OrderStatusHistories")
+                .HasPartitionKey(h => h.OrderID)
+                .HasNoDiscriminator();
 
         base.OnModelCreating(modelBuilder);
     }

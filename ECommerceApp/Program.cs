@@ -1,44 +1,48 @@
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Confluent.Kafka;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using BCrypt.Net;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Authorization;
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.AspNetCore.Identity.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://localhost:5097");
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 
-builder.Services.AddCors(
-    options =>
+// CosmosDB Setup
+string? cosmosConnStr = Environment.GetEnvironmentVariable("COSMOSDB_CONN_STRING");
+
+if (string.IsNullOrEmpty(cosmosConnStr))
+{
+    throw new InvalidOperationException("COSMOSDB_CONN_STRING is missing in environment variables.");
+}
+
+builder.Services.AddDbContext<DBContext>(options =>
+{
+    options.UseCosmos(
+        cosmosConnStr,
+        databaseName: "ordersdb"
+    );
+});
+
+// CORS
+var allowedOrigins = "https://orange-flower-079d22910.2.azurestaticapps.net";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowedFrontend", policy =>
     {
-        options.AddPolicy("AllowedFrontend", policy =>
-        {
-            policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-        });
-    }
-);
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    });
+});
+
+// JSON options
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 
-builder.Services.AddDbContext<DBContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
-
+// JWT Authentication
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
@@ -108,11 +112,11 @@ app.MapGet("/api/orders", async (DBContext db) =>
     var orders = await db.Orders.Select(
         o => new
         {
-            o.OrderID,
+            o.ID,
             o.Item,
             o.Quantity,
             OrderStatus = o.OrderStatus.ToString(),
-            o.UserID,
+            o.UserId,
             User = o.User != null ? o.User.Username : null
         }
     ).ToListAsync();
@@ -124,8 +128,8 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal 
     var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
     if(userIdclaim == null)
         return Results.Unauthorized();
-    _ = int.TryParse(userIdclaim?.Value, out int userId);
-    var orders = new Orders { Item = res.Item, Quantity = res.Quantity , UserID = userId,OrderStatus = 0 };
+    var userId = userIdclaim.Value;
+    var orders = new Orders { Item = res.Item, Quantity = res.Quantity , UserId = userId.ToString(),OrderStatus = 0 };
     db.Orders.Add(orders);
     await db.SaveChangesAsync();
 
@@ -142,19 +146,19 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal 
     
     Console.WriteLine($"Produced order to Kafka: {message}");
 
-    return Results.Created($"/api/orders/{orders.OrderID}", orders);
+    return Results.Created($"/api/orders/{orders.ID}", orders);
 }).RequireAuthorization().WithName("PostOrders");
 
-app.MapPut("/api/orders/{id}", async (int id, DBContext db, [FromBody] Orders updatedOrder, ClaimsPrincipal claims) =>
+app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders updatedOrder, ClaimsPrincipal claims) =>
 {
     var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdclaim == null)
         return Results.Unauthorized();
-    _ = int.TryParse(userIdclaim?.Value, out int userId);
-    var orders = await db.Orders.FindAsync(id);
+    var userId = userIdclaim.Value;
+    var orders = await db.Orders.FindAsync(id,userId);
 
     if (orders == null) return Results.NotFound();
-    if (orders.UserID == userId)
+    if (orders.UserId == userId.ToString())
     {
         orders.Item = updatedOrder.Item;
         orders.Quantity = updatedOrder.Quantity;
@@ -169,14 +173,14 @@ app.MapPut("/api/orders/{id}", async (int id, DBContext db, [FromBody] Orders up
 
 }).RequireAuthorization();
 
-app.MapPut("/api/orders/{id}/status", async (int id, DBContext db, [FromBody] OrderStatus newStatus, ClaimsPrincipal user) =>
+app.MapPut("/api/orders/{id}/status", async (string id, DBContext db, [FromBody] OrderStatus newStatus, ClaimsPrincipal user) =>
 {
-    var order = await db.Orders.FindAsync(id);
+    var order = await db.Orders.FindAsync(id,user.FindFirstValue(ClaimTypes.NameIdentifier));
     if (order == null) return Results.NotFound();
 
     db.OrderStatusHistories.Add(new OrderStatusHistory
     {
-        OrderID = order.OrderID,
+        OrderID = order.ID,
         OrderStatus = newStatus,
         ChangedBy = user.Identity?.Name,
         ChangedAt = DateTime.UtcNow
@@ -188,16 +192,16 @@ app.MapPut("/api/orders/{id}/status", async (int id, DBContext db, [FromBody] Or
     return Results.Ok(order);
 });
 
-app.MapDelete("/api/orders", async (DBContext db, [FromBody] Orders order, ClaimsPrincipal claims) =>
+app.MapDelete("/api/orders/{id}", async (string id,DBContext db, ClaimsPrincipal claims) =>
 {
     var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdclaim == null)
         return Results.Unauthorized();
-    _ = int.TryParse(userIdclaim?.Value, out int userId);
-    var orders = await db.Orders.FirstOrDefaultAsync(o => o.Item == order.Item && o.Quantity == order.Quantity);
+    var userId = userIdclaim.Value;
+    var orders = await db.Orders.FindAsync(id,userId);
 
     if (orders == null) return Results.NotFound();
-    if (orders.UserID == userId)
+    if (orders.UserId == userId.ToString())
         db.Orders.Remove(orders);
     else
         return Results.Unauthorized();
@@ -277,7 +281,7 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
 
     var claims = new[]
     {
-        new Claim(ClaimTypes.NameIdentifier, dbUser.UserID.ToString()),
+        new Claim(ClaimTypes.NameIdentifier, dbUser.ID.ToString()),
         new Claim(ClaimTypes.Name,dbUser.Username),
         new Claim(ClaimTypes.Role,dbUser.Role)
     };
@@ -302,7 +306,7 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
         Expires = DateTimeOffset.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiresInMinutes"] ?? "60"))
     });
 
-    return Results.Ok(new { Token = jwt ,dbUser.Username, dbUser.UserID, dbUser.Role});
+    return Results.Ok(new { Token = jwt ,dbUser.Username, dbUser.ID, dbUser.Role});
 });
 
 app.MapPut("/api/auth/forgetpassword", async (DBContext db, [FromBody] LoginDatabase ResetUser) =>
@@ -327,7 +331,7 @@ app.MapGet("/api/users", async (DBContext db) =>
     var users = await db.Logins.Select(u =>
     new
     {
-        u.UserID,
+        u.ID,
         u.Username,
         u.Role
 
@@ -340,7 +344,7 @@ app.MapGet("/api/users", async (DBContext db) =>
     return Results.Ok(users);
 });
 
-app.MapDelete("/api/users/{id}", async (int id,DBContext db, ClaimsPrincipal claims) =>
+app.MapDelete("/api/users/{id}", async (string id,DBContext db, ClaimsPrincipal claims) =>
 {
     var userRole = claims.FindFirst(ClaimTypes.Role)?.Value.ToString();
 
@@ -349,7 +353,7 @@ app.MapDelete("/api/users/{id}", async (int id,DBContext db, ClaimsPrincipal cla
         return Results.StatusCode(StatusCodes.Status403Forbidden);
     }
 
-    var user = await db.Logins.FindAsync(id);
+    var user = await db.Logins.FindAsync(id,id);
 
     if (user == null)
     {
@@ -388,6 +392,5 @@ catch (Exception ex)
 {
     Console.WriteLine($"🚨 App failed to start: {ex.Message}");
 }
-
 
 public record OrderRequest(string Item,int Quantity);
