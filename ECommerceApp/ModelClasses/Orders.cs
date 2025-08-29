@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+using System.Text.Json.Serialization;
 
 public enum OrderStatus
 {
@@ -10,15 +10,21 @@ public enum OrderStatus
     Completed = 3,
     Cancelled = 4
 }
+
 public class Orders
 {
     [Key]
-    public int OrderID { get; set; }
+    [JsonPropertyName("id")]
+    public string ID { get; set; } = Guid.NewGuid().ToString();
+
     public string Item { get; set; } = string.Empty;
     public int Quantity { get; set; }
 
     [ForeignKey("User")]
-    public int UserID { get; set; }
+    [JsonPropertyName("userId")] 
+    public string UserId { get; set; } = string.Empty;
+
     public LoginDatabase? User { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public OrderStatus OrderStatus { get; set; }
 }

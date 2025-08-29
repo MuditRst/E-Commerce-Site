@@ -18,15 +18,15 @@ function UserDashBoard(){
         }
     }, [viewMode]);
 
-    const handleDeleteOrder = async (order:Order) => {
+    const handleDeleteOrder = async (orderID:number) => {
 
-        if (!order.item || !order.quantity) {
-            console.error(`Error Deleting Order: Order ${order.item} and ${order.quantity} are required`);
+        if (!orderID) {
+            console.error(`Error Deleting Order: Order ID ${orderID} is required`);
             return;
         }
 
         try {
-            const res = await deleteOrder({item: order.item, quantity: Number(order.quantity)});
+            const res = await deleteOrder(orderID);
             setViewMode("showAllOrders");
             window.location.reload();
         } catch (error) {
