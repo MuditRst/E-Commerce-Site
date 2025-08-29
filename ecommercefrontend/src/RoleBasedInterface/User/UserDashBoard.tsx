@@ -26,9 +26,9 @@ function UserDashBoard(){
         }
 
         try {
-            const res = await deleteOrder(orderID);
+            await deleteOrder(orderID);
+            setOrders(prevOrders => prevOrders.filter(o => o.orderID !== orderID));
             setViewMode("showAllOrders");
-            window.location.reload();
         } catch (error) {
             console.error("Error deleting order:", error);
         }

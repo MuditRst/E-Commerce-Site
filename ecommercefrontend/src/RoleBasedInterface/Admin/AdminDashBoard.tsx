@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { getOrders, updateOrderStatus } from "../../api";
 import Order from "../../Interface/Order";
 import RealTimeOrders from "./RealTimeOrders";
