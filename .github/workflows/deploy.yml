@@ -59,16 +59,3 @@ jobs:
           action: "upload"
           app_location: "ecommercefrontend"
           output_location: "build"
-          
-      - name: Set CosmosDB Connection String in Azure App Settings
-        uses: azure/appservice-settings@v1
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          app-settings-json: |
-            [
-              {
-                "name": "COSMOSDB_CONN_STRING",
-                "value": "${{ secrets.COSMOSDB_CONN_STRING }}",
-                "slotSetting": false
-              }
-            ]
