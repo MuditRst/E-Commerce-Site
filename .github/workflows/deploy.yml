@@ -20,7 +20,7 @@ jobs:
 
       - name: Build and publish
         run: |
-          cd EcommerceApp
+          cd ECommerceApp
           dotnet restore
           dotnet build --configuration Release
           dotnet publish -c Release -o publish
