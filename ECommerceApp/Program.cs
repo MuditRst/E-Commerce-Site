@@ -92,16 +92,17 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseRouting();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 app.UseCors("AllowedFrontend");
 
 //auth here
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 app.MapHub<OrderHub>("/hubs/orders");
 
