@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,16 +77,24 @@ builder.Services.AddAuthorization();
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddSignalR(options => options.EnableDetailedErrors = true);
-builder.Services.AddHostedService<KafkaConsumerService>();
-
-var adminClient = new AdminClientBuilder(new AdminClientConfig
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+builder.Services.AddSingleton(sp =>
 {
-    BootstrapServers = "localhost:9092"
-}).Build();
+    var kafkaSettings = sp.GetRequiredService<IOptions<KafkaSettings>>().Value;
 
-var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(5));
-Console.WriteLine($"Kafka topics available: {string.Join(", ", metadata.Topics.Select(t => t.Topic))}");
+    return new ProducerConfig
+    {
+        BootstrapServers = kafkaSettings.BootstrapServers,
+        SecurityProtocol = SecurityProtocol.SaslSsl,
+        SaslMechanism = SaslMechanism.Plain,
+        SaslUsername = "$ConnectionString",
+        SaslPassword = kafkaSettings.ConnectionString,
+        BrokerVersionFallback = "0.10.0",
+        ApiVersionFallbackMs = 15000
+    };
+});
 
+builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();
 
@@ -107,7 +116,6 @@ if (app.Environment.IsDevelopment())
 app.MapHub<OrderHub>("/hubs/orders");
 
 // Orders CRUD endpoints
-
 app.MapGet("/api/orders", async (DBContext db) =>
 {
     var orders = await db.Orders.Select(
@@ -124,7 +132,7 @@ app.MapGet("/api/orders", async (DBContext db) =>
     return Results.Ok(orders);
 }).WithName("GetOrders");
 
-app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal claims) =>
+app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal claims, ProducerConfig producerConfig) =>
 {
     var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
     if(userIdclaim == null)
@@ -134,18 +142,15 @@ app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal 
     db.Orders.Add(orders);
     await db.SaveChangesAsync();
 
-    var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
-    using var producer = new ProducerBuilder<Null, string>(config).Build();
-
-
-    var message = JsonSerializer.Serialize(orders, new JsonSerializerOptions
+    using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
+    var payload = JsonSerializer.Serialize(orders);
+    await producer.ProduceAsync("orders", new Message<string, string>
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        Key = orders.ID,
+        Value = payload
     });
 
-    await producer.ProduceAsync("order-topic", new Message<Null, string> { Value = message });
-    
-    Console.WriteLine($"Produced order to Kafka: {message}");
+    Console.WriteLine($"✅ Order {orders.ID} published to Event Hubs!");
 
     return Results.Created($"/api/orders/{orders.ID}", orders);
 }).RequireAuthorization().WithName("PostOrders");
@@ -156,7 +161,7 @@ app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders
     if (userIdclaim == null)
         return Results.Unauthorized();
     var userId = userIdclaim.Value;
-    var orders = await db.Orders.FindAsync(id,userId);
+    var orders = await db.Orders.FirstOrDefaultAsync(o=> o.ID == id && o.UserId == userId);
 
     if (orders == null) return Results.NotFound();
     if (orders.UserId == userId.ToString())
@@ -263,8 +268,8 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
     {
         Expires = DateTimeOffset.UtcNow.AddDays(-1),
         HttpOnly = true,
-        Secure = !app.Environment.IsDevelopment(),
-        SameSite = SameSiteMode.Strict
+        Secure = true,
+        SameSite = SameSiteMode.None
     });
 
     var dbUser = await db.Logins.FirstOrDefaultAsync(u => u.Username == user.Username);
@@ -274,8 +279,8 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
         {
             Expires = DateTimeOffset.UtcNow.AddDays(-1),
             HttpOnly = true,
-            Secure = !app.Environment.IsDevelopment(),
-            SameSite = SameSiteMode.Strict
+            Secure = true,
+            SameSite = SameSiteMode.None
         });
         return Results.Unauthorized();
     }
@@ -302,8 +307,8 @@ app.MapPost("/api/auth/login", async (DBContext db, HttpContext http, [FromBody]
     http.Response.Cookies.Append("Jwt", jwt, new CookieOptions
     {
         HttpOnly = true,
-        Secure = !app.Environment.IsDevelopment(),
-        SameSite = SameSiteMode.Strict,
+        Secure = true,
+        SameSite = SameSiteMode.None,
         Expires = DateTimeOffset.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiresInMinutes"] ?? "60"))
     });
 
