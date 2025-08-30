@@ -49,6 +49,7 @@ jobs:
         run: |
           cd ecommercefrontend
           npm install
+          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> .env.production
           npm run build
 
       - name: Deploy to Azure Static Web App
