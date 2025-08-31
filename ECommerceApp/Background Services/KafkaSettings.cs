@@ -4,4 +4,5 @@ public class KafkaSettings
     public string BootstrapServers { get; set; } = "";
     public string ConnectionString { get; set; } = "";
     public string Topic { get; set; } = "orders";
+    public string ConsumerGroupId { get; set; } = "order-consumer-group";
 }
