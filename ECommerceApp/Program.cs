@@ -78,22 +78,8 @@ var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddSignalR(options => options.EnableDetailedErrors = true);
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
-builder.Services.AddSingleton(sp =>
-{
-    var kafkaSettings = sp.GetRequiredService<IOptions<KafkaSettings>>().Value;
 
-    return new ProducerConfig
-    {
-        BootstrapServers = kafkaSettings.BootstrapServers,
-        SecurityProtocol = SecurityProtocol.SaslSsl,
-        SaslMechanism = SaslMechanism.Plain,
-        SaslUsername = "$ConnectionString",
-        SaslPassword = kafkaSettings.ConnectionString,
-        BrokerVersionFallback = "0.10.0",
-        ApiVersionFallbackMs = 15000
-    };
-});
-
+builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();
@@ -132,27 +118,21 @@ app.MapGet("/api/orders", async (DBContext db) =>
     return Results.Ok(orders);
 }).WithName("GetOrders");
 
-app.MapPost("/api/orders", async (DBContext db,OrderRequest res,ClaimsPrincipal claims, ProducerConfig producerConfig) =>
+app.MapPost("/api/orders", async (DBContext db, OrderRequest res, ClaimsPrincipal claims, KafkaProducerService kafkaProducer) =>
 {
-    var userIdclaim = claims.FindFirst(ClaimTypes.NameIdentifier);
-    if(userIdclaim == null)
+    var userIdClaim = claims.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
         return Results.Unauthorized();
-    var userId = userIdclaim.Value;
-    var orders = new Orders { Item = res.Item, Quantity = res.Quantity , UserId = userId.ToString(),OrderStatus = 0 };
-    db.Orders.Add(orders);
+
+    var userId = userIdClaim.Value;
+    var order = new Orders { Item = res.Item, Quantity = res.Quantity, UserId = userId, OrderStatus = 0 };
+
+    db.Orders.Add(order);
     await db.SaveChangesAsync();
 
-    using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
-    var payload = JsonSerializer.Serialize(orders);
-    await producer.ProduceAsync("orders", new Message<string, string>
-    {
-        Key = orders.ID,
-        Value = payload
-    });
+    await kafkaProducer.ProduceAsync(order, order.ID);
 
-    Console.WriteLine($"✅ Order {orders.ID} published to Event Hubs!");
-
-    return Results.Created($"/api/orders/{orders.ID}", orders);
+    return Results.Created($"/api/orders/{order.ID}", order);
 }).RequireAuthorization().WithName("PostOrders");
 
 app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders updatedOrder, ClaimsPrincipal claims) =>
