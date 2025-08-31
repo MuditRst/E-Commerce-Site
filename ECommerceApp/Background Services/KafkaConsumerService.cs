@@ -44,7 +44,7 @@ public class KafkaConsumerService : BackgroundService
             SaslMechanism = SaslMechanism.Plain,
             SaslUsername = "$ConnectionString",
             SaslPassword = _kafkaSettings.ConnectionString,
-            GroupId = "order-consumer-group",
+            GroupId = _kafkaSettings.ConsumerGroupId ?? "order-consumer-group", // ✅ From appsettings
             AutoOffsetReset = AutoOffsetReset.Earliest,
             BrokerVersionFallback = "0.10.0",
             ApiVersionFallbackMs = 15000
