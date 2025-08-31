@@ -2,37 +2,19 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 
 public class KafkaConsumerService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly KafkaSettings _kafkaSettings;
-    private readonly CosmosClient _cosmosClient;
-    private Container _ordersContainer;
-    private Container _logsContainer;
 
     public KafkaConsumerService(
         IServiceProvider serviceProvider,
-        IOptions<KafkaSettings> kafkaOptions,
-        CosmosClient cosmosClient)
+        IOptions<KafkaSettings> kafkaOptions)
     {
         _serviceProvider = serviceProvider;
         _kafkaSettings = kafkaOptions.Value;
-        _cosmosClient = cosmosClient;
-    }
-
-    public override async Task StartAsync(CancellationToken cancellationToken)
-    {
-        var db = await _cosmosClient.CreateDatabaseIfNotExistsAsync("ordersdb");
-        var ordersResponse = await db.Database.CreateContainerIfNotExistsAsync("orders", "/userId");
-        var logsResponse = await db.Database.CreateContainerIfNotExistsAsync("kafkalogs", "/topic");
-
-        _ordersContainer = ordersResponse.Container;
-        _logsContainer = logsResponse.Container;
-
-        await base.StartAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,7 +26,7 @@ public class KafkaConsumerService : BackgroundService
             SaslMechanism = SaslMechanism.Plain,
             SaslUsername = "$ConnectionString",
             SaslPassword = _kafkaSettings.ConnectionString,
-            GroupId = _kafkaSettings.ConsumerGroupId ?? "order-consumer-group", // ✅ From appsettings
+            GroupId = _kafkaSettings.ConsumerGroupId ?? "order-consumer-group",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             BrokerVersionFallback = "0.10.0",
             ApiVersionFallbackMs = 15000
@@ -66,15 +48,21 @@ public class KafkaConsumerService : BackgroundService
                     var result = consumer.Consume(stoppingToken);
                     Console.WriteLine($"Received: {result.Message.Value}");
 
-                    var logDoc = new
-                    {
-                        id = Guid.NewGuid().ToString(),
-                        topic = result.Topic,
-                        message = result.Message.Value,
-                        timestamp = DateTime.UtcNow
-                    };
-                    await _logsContainer.CreateItemAsync(logDoc, new PartitionKey(logDoc.topic), cancellationToken: stoppingToken);
+                    using var scope = _serviceProvider.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<DBContext>();
+                    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<OrderHub>>();
 
+                    // Save KafkaLog
+                    var log = new KafkaLog
+                    {
+                        ID = Guid.NewGuid().ToString(),
+                        Topic = result.Topic,
+                        Message = result.Message.Value,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    db.KafkaLogs.Add(log);
+
+                    // Deserialize and save Order
                     var order = JsonSerializer.Deserialize<Orders>(
                         result.Message.Value,
                         new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } }
@@ -82,12 +70,13 @@ public class KafkaConsumerService : BackgroundService
 
                     if (order != null)
                     {
-                        await _ordersContainer.UpsertItemAsync(order, new PartitionKey(order.UserId), cancellationToken: stoppingToken);
+                        db.Orders.Update(order); // Upsert
                         Console.WriteLine($"Order {order.ID} saved to CosmosDB (User {order.UserId})");
                     }
 
-                    using var scope = _serviceProvider.CreateScope();
-                    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<OrderHub>>();
+                    await db.SaveChangesAsync(stoppingToken);
+
+                    // Broadcast to clients
                     await hubContext.Clients.All.SendAsync("ReceiveOrder", result.Message.Value, cancellationToken: stoppingToken);
                 }
                 catch (ConsumeException ce)
