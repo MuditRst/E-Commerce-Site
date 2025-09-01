@@ -116,19 +116,22 @@ app.MapHub<OrderHub>("/hubs/orders");
 // Orders CRUD endpoints
 app.MapGet("/api/orders", async (DBContext db) =>
 {
-    var orders = await db.Orders.Select(
-        o => new
-        {
-            o.ID,
-            o.Item,
-            o.Quantity,
-            OrderStatus = o.OrderStatus.ToString(),
-            o.UserId,
-            User = o.User != null ? o.User.Username : null
-        }
-    ).ToListAsync();
-    return Results.Ok(orders);
-}).WithName("GetOrders");
+    var orders = await db.Orders.ToListAsync();
+    var uniqueUserIds = orders.Select(o => o.UserId).Distinct().ToList();
+    var users = await db.Logins.Where(u => uniqueUserIds.Contains(u.ID)).ToListAsync();
+
+    var ordersWithUser = orders.Select(o => new
+    {
+        o.ID,
+        o.Item,
+        o.Quantity,
+        o.OrderStatus,
+        o.UserId,
+        User = users.FirstOrDefault(u => u.ID == o.UserId)?.Username
+    });
+
+    return Results.Ok(ordersWithUser);
+}).WithName("GetOrders");;
 
 app.MapPost("/api/orders", async (DBContext db, OrderRequest res, ClaimsPrincipal claims, KafkaProducerService kafkaProducer) =>
 {
@@ -156,7 +159,7 @@ app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders
     var orders = await db.Orders.FirstOrDefaultAsync(o=> o.ID == id && o.UserId == userId);
 
     if (orders == null) return Results.NotFound();
-    if (orders.UserId == userId.ToString())
+    if (orders.UserId == userId)
     {
         orders.Item = updatedOrder.Item;
         orders.Quantity = updatedOrder.Quantity;
