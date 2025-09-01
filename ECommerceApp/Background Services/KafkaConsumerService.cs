@@ -35,7 +35,7 @@ public class KafkaConsumerService : BackgroundService
         var topicName = _kafkaSettings.Topic ?? "orders";
 
         using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-        await Task.Run(() => consumer.Subscribe(topicName),stoppingToken);
+        consumer.Subscribe(topicName);
 
         Console.WriteLine($"Kafka Consumer started. Listening to topic {topicName}...");
 
