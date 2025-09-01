@@ -11,6 +11,14 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//Kestrel Setup
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+    options.ListenAnyIP(int.Parse(port));
+});
+
 // CosmosDB Setup
 string? cosmosConnStr = Environment.GetEnvironmentVariable("COSMOSDB_CONN_STRING");
 
