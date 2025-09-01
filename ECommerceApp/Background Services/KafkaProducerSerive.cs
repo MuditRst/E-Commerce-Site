@@ -17,8 +17,7 @@ public class KafkaProducerService
             SecurityProtocol = SecurityProtocol.SaslSsl,
             SaslMechanism = SaslMechanism.Plain,
             SaslUsername = "$ConnectionString",
-            SaslPassword = _settings.ConnectionString,
-            ApiVersionFallbackMs = 15000
+            SaslPassword = _settings.ConnectionString
         };
 
         _producer = new ProducerBuilder<string, string>(config).Build();

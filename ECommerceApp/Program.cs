@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Confluent.Kafka;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -7,7 +6,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -385,6 +383,7 @@ try
 catch (Exception ex)
 {
     Console.WriteLine($"🚨 App failed to start: {ex.Message}");
+    throw;
 }
 
 public record OrderRequest(string Item,int Quantity);

@@ -27,8 +27,7 @@ public class KafkaConsumerService : BackgroundService
             SaslUsername = "$ConnectionString",
             SaslPassword = _kafkaSettings.ConnectionString,
             GroupId = _kafkaSettings.ConsumerGroupId ?? "order-consumer-group",
-            AutoOffsetReset = AutoOffsetReset.Earliest,
-            ApiVersionFallbackMs = 15000
+            AutoOffsetReset = AutoOffsetReset.Earliest
         };
 
         var topicName = _kafkaSettings.Topic ?? "orders";
