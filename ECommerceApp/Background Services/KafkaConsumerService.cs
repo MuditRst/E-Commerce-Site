@@ -19,6 +19,8 @@ public class KafkaConsumerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Yield();
+
         var config = new ConsumerConfig
         {
             BootstrapServers = _kafkaSettings.BootstrapServers,
@@ -33,7 +35,7 @@ public class KafkaConsumerService : BackgroundService
         var topicName = _kafkaSettings.Topic ?? "orders";
 
         using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-        consumer.Subscribe(topicName);
+        await Task.Run(() => consumer.Subscribe(topicName),stoppingToken);
 
         Console.WriteLine($"Kafka Consumer started. Listening to topic {topicName}...");
 
