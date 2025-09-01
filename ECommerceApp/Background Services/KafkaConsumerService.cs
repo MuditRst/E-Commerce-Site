@@ -28,7 +28,6 @@ public class KafkaConsumerService : BackgroundService
             SaslPassword = _kafkaSettings.ConnectionString,
             GroupId = _kafkaSettings.ConsumerGroupId ?? "order-consumer-group",
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            BrokerVersionFallback = "0.10.0",
             ApiVersionFallbackMs = 15000
         };
 
@@ -70,7 +69,7 @@ public class KafkaConsumerService : BackgroundService
 
                     if (order != null)
                     {
-                        db.Orders.Update(order); // Upsert
+                        db.Orders.Update(order);
                         Console.WriteLine($"Order {order.ID} saved to CosmosDB (User {order.UserId})");
                     }
 
