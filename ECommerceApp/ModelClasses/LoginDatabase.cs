@@ -17,6 +17,4 @@ public class LoginDatabase
     public string Password { get; set; } = string.Empty;
 
     public string Role { get; set; } = "User";
-
-    public ICollection<Orders>? Orders { get; set; }
 }

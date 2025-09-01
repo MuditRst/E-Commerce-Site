@@ -20,11 +20,9 @@ public class Orders
     public string Item { get; set; } = string.Empty;
     public int Quantity { get; set; }
 
-    [ForeignKey("User")]
     [JsonPropertyName("userId")] 
     public string UserId { get; set; } = string.Empty;
 
-    public LoginDatabase? User { get; set; }
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public OrderStatus OrderStatus { get; set; }
 }
