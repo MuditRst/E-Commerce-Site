@@ -90,7 +90,9 @@ builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+if(app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseRouting();
 
 app.UseCors("AllowedFrontend");
@@ -374,7 +376,22 @@ app.MapGet("/api/orders/stats", async(DBContext db)=>
     return Results.Ok(stats);
 }).RequireAuthorization();
 
+//Health Checkups
+
 app.MapGet("/", () => "Backend is running ✅");
+
+app.MapGet("/health", async (DBContext db) =>
+{
+    try
+    {
+        await db.Orders.FirstOrDefaultAsync();
+        return Results.Ok(new { status = "Healthy ✅" });
+    }
+    catch
+    {
+        return Results.StatusCode(500);
+    }
+});
 
 try
 {
