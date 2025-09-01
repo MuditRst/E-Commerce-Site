@@ -88,9 +88,12 @@ builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafk
 builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddHostedService<KafkaConsumerService>();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
-if(app.Environment.IsDevelopment())
+if(!app.Environment.IsProduction())
     app.UseHttpsRedirection();
 
 app.UseRouting();
@@ -104,7 +107,8 @@ app.UseAuthorization();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.MapHub<OrderHub>("/hubs/orders");
