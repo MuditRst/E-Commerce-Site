@@ -199,7 +199,7 @@ app.MapDelete("/api/orders/{id}", async (string id,DBContext db, ClaimsPrincipal
     var orders = await db.Orders.FindAsync(id,userId);
 
     if (orders == null) return Results.NotFound();
-    if (orders.UserId == userId.ToString())
+    if (orders.UserId == userId)
         db.Orders.Remove(orders);
     else
         return Results.Unauthorized();
@@ -208,7 +208,6 @@ app.MapDelete("/api/orders/{id}", async (string id,DBContext db, ClaimsPrincipal
 }).RequireAuthorization();
 
 // Kafka|SignalR endpoints
-
 app.MapGet("/api/kafka/logs", async(DBContext db,ClaimsPrincipal claims)=>
 {
     var userRole = claims.FindFirst(ClaimTypes.Role)?.Value;
@@ -229,7 +228,6 @@ app.MapGet("/api/kafka/logs", async(DBContext db,ClaimsPrincipal claims)=>
 });
 
 // User Authentication and Authorization endpoints
-
 app.MapGet("/api/user/me", (ClaimsPrincipal user) =>
 {
     var username = user.Identity?.Name;
@@ -241,13 +239,14 @@ app.MapGet("/api/user/me", (ClaimsPrincipal user) =>
 
 app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase userToRegister) =>
 {
-    var user = await db.Logins.AnyAsync(u => u.Username == userToRegister.Username);
+    var user = await db.Logins.WithPartitionKey(userToRegister.Username).AnyAsync(u => u.Username == userToRegister.Username);
     if (user)
     {
         return Results.Conflict("User already exists");
     }
 
     userToRegister.Password = PasswordHelper.HashPassword(userToRegister.Password);
+    userToRegister.ID = userToRegister.Username;
     db.Logins.Add(userToRegister);
     await db.SaveChangesAsync();
 

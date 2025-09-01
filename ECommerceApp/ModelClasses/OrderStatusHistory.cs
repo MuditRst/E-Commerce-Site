@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 public class OrderStatusHistory()
 {
     [Key]
+    [JsonPropertyName("id")] 
     public string ID { get; set; } = Guid.NewGuid().ToString();
 
     [ForeignKey("Order")]
