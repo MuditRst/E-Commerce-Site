@@ -18,7 +18,6 @@ public class KafkaProducerService
             SaslMechanism = SaslMechanism.Plain,
             SaslUsername = "$ConnectionString",
             SaslPassword = _settings.ConnectionString,
-            BrokerVersionFallback = "0.10.0",
             ApiVersionFallbackMs = 15000
         };
 
