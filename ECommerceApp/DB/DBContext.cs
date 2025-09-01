@@ -27,9 +27,9 @@ public class DBContext : DbContext
             .HasKey(k => new { k.ID, k.Topic });
 
         modelBuilder.Entity<OrderStatusHistory>().ToContainer("OrderStatusHistories")
-            .HasPartitionKey(h => h.OrderID)
+            .HasPartitionKey(h => h.UserId)
             .HasNoDiscriminator()
-            .HasKey(o => new{o.ID,o.OrderID});
+            .HasKey(o => new{o.ID,o.UserId});
 
         base.OnModelCreating(modelBuilder);
     }

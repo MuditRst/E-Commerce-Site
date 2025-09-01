@@ -182,6 +182,7 @@ app.MapPut("/api/orders/{id}/status", async (string id, DBContext db, [FromBody]
     db.OrderStatusHistories.Add(new OrderStatusHistory
     {
         OrderID = order.ID,
+        UserId = order.UserId,
         OrderStatus = newStatus,
         ChangedBy = user.Identity?.Name,
         ChangedAt = DateTime.UtcNow
