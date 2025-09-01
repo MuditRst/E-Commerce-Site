@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 public class KafkaLog
 {
     [Key]
+    [JsonPropertyName("id")] 
     public string ID { get; set; } = Guid.NewGuid().ToString();
 
     [JsonPropertyName("topic")] 

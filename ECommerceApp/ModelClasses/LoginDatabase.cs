@@ -5,7 +5,7 @@ public class LoginDatabase
 {
     [Key]
     [JsonPropertyName("id")]
-    public string ID { get; set; } = Guid.NewGuid().ToString();
+    public string ID { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(100)]
