@@ -243,7 +243,7 @@ app.MapGet("/api/user/me", (ClaimsPrincipal user) =>
 
 app.MapPost("/api/auth/register", async (DBContext db, [FromBody] LoginDatabase userToRegister) =>
 {
-    var user = await db.Logins.WithPartitionKey(userToRegister.Username).AnyAsync(u => u.Username == userToRegister.Username);
+    var user = await db.Logins.AnyAsync(u => u.Username == userToRegister.Username);
     if (user)
     {
         return Results.Conflict("User already exists");
