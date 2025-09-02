@@ -9,6 +9,7 @@ public class LoginDatabase
 
     [Required]
     [MaxLength(100)]
+    [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
 
     [Required]
