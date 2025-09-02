@@ -19,7 +19,7 @@ public class DBContext : DbContext
 
         modelBuilder.Entity<LoginDatabase>().ToContainer("Users")
             .HasPartitionKey(u => u.Username)
-            .HasKey(u => new { u.ID, u.Username });
+            .HasKey(u => u.ID);
 
         modelBuilder.Entity<KafkaLog>().ToContainer("KafkaLogs")
             .HasPartitionKey(k => k.Topic)
