@@ -18,7 +18,7 @@ function UserDashBoard(){
         }
     }, [viewMode]);
 
-    const handleDeleteOrder = async (orderID:number) => {
+    const handleDeleteOrder = async (orderID:string) => {
 
         if (!orderID) {
             console.error(`Error Deleting Order: Order ID ${orderID} is required`);
@@ -26,7 +26,7 @@ function UserDashBoard(){
         }
 
         try {
-            await deleteOrder(orderID);
+            await deleteOrder(orderID.toString());
             setOrders(prevOrders => prevOrders.filter(o => o.id !== orderID));
             setViewMode("showAllOrders");
         } catch (error) {
@@ -58,7 +58,7 @@ function UserDashBoard(){
     const handleUpdateSubmit = async (order: Order) => {
         try {
             if (order.id !== undefined) {
-                const res = await updateOrder(Number(order.id), {
+                const res = await updateOrder(String(order.id), {
                     item: order.item,
                     quantity: order.quantity,
                 });
