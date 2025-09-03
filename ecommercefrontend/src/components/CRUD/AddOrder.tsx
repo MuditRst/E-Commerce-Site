@@ -1,10 +1,11 @@
 import React from "react";
 import Order from "../../Interface/Order";
 import { getUserDetails } from "../Authentication/LoginAPI";
+import NewOrder from "../../Interface/NewOrder";
 
 type AddOrderProps = {
   orderToAdd?: Order;
-  handleAddOrder: (newOrder: Order) => Promise<void>;
+  handleAddOrder: (newOrder: NewOrder) => Promise<void>;
 };
 
 function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
@@ -22,15 +23,10 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
     const userDetailsResponse = await getUserDetails();
     const userDetails = userDetailsResponse?.data;
 
-    const newOrder: Order = {
-      id: orderToAdd?.id ?? 0,
+    const newOrder: NewOrder = {
       item,
       quantity,
-      userId: {
-        id: userDetails?.userID,
-        username: userDetails?.username,
-        role: userDetails?.userRole
-      }
+      userId: userDetails?.userID
     };
 
     await handleAddOrder(newOrder);
