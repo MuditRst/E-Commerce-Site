@@ -31,7 +31,7 @@ function RealTimeOrders() {
             <ul>
                 {orders.map((order) => {
                     console.log("Order:", order);
-                    return <li key={order.orderID}>{order.item} - {order.quantity}</li>
+                    return <li key={order.id}>{order.item} - {order.quantity}</li>
                 })}
             </ul>
 

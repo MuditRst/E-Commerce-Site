@@ -27,7 +27,7 @@ function UserDashBoard(){
 
         try {
             await deleteOrder(orderID);
-            setOrders(prevOrders => prevOrders.filter(o => o.orderID !== orderID));
+            setOrders(prevOrders => prevOrders.filter(o => o.id !== orderID));
             setViewMode("showAllOrders");
         } catch (error) {
             console.error("Error deleting order:", error);
@@ -57,8 +57,8 @@ function UserDashBoard(){
 
     const handleUpdateSubmit = async (order: Order) => {
         try {
-            if (order.orderID !== undefined) {
-                const res = await updateOrder(Number(order.orderID), {
+            if (order.id !== undefined) {
+                const res = await updateOrder(Number(order.id), {
                     item: order.item,
                     quantity: order.quantity,
                 });
