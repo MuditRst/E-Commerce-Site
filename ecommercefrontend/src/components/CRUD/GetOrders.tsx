@@ -25,13 +25,13 @@ function GetOrders({ handleDeleteOrder, handleUpdateOrder }: GetOrdersProps) {
       </thead>
       <tbody>
         {orders.map(order => (
-          <tr key={order.orderID}>
+          <tr key={order.id}>
             <td>{order.item}</td>
             <td>{order.quantity}</td>
             <td>{order.orderStatus}</td>
             <td className="action-buttons">
               <button onClick={() => handleUpdateOrder(order)}>Edit</button>
-              <button className="delete" onClick={() => handleDeleteOrder(Number(order.orderID))}>Delete</button>
+              <button className="delete" onClick={() => handleDeleteOrder(Number(order.id))}>Delete</button>
             </td>
           </tr>
         ))}

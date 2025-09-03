@@ -1,7 +1,7 @@
 import { Key } from "react";
 
 type User = {
-    userID : Key|number;
+    id : Key|number;
     username: string;
     role: string;
 }

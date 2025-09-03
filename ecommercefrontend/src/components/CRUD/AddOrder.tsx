@@ -23,11 +23,11 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
     const userDetails = userDetailsResponse?.data;
 
     const newOrder: Order = {
-      orderID: orderToAdd?.orderID ?? 0,
+      id: orderToAdd?.id ?? 0,
       item,
       quantity,
-      user: {
-        userID: userDetails?.userID,
+      userId: {
+        id: userDetails?.userID,
         username: userDetails?.username,
         role: userDetails?.userRole
       }

@@ -34,19 +34,19 @@ function AdminDashBoard() {
       <div className="orders-panel">
         <ul>
           {orders.map((order) => (
-            <li key={order.orderID}>
+            <li key={order.id}>
               <div className="order-meta">
-                <span className="chip">ID: {order.orderID}</span>
+                <span className="chip">ID: {order.id}</span>
                 <span className="chip">Item: {order.item}</span>
                 <span className="chip">Qty: {order.quantity}</span>
                 <span className="chip status">{order.orderStatus}</span>
-                <span className="chip">User: {order.user?.toString()}</span>
+                <span className="chip">User: {order.userId?.toString()}</span>
               </div>
 
               <div className="order-actions">
                 <select
-                  value={statusInputs[Number(order.orderID)] ?? order.orderStatus}
-                  onChange={(e) => handleStatusChange(Number(order.orderID), e.target.value)}
+                  value={statusInputs[Number(order.id)] ?? order.orderStatus}
+                  onChange={(e) => handleStatusChange(Number(order.id), e.target.value)}
                 >
                   <option value={0}>Created</option>
                   <option value={1}>Pending</option>
@@ -58,12 +58,12 @@ function AdminDashBoard() {
                 <button
                   onClick={() => {
                     console.log("Updating Order Status:", {
-                      orderID: Number(order.orderID),
-                      newStatus: Number(statusInputs[Number(order.orderID)]),
+                      orderID: Number(order.id),
+                      newStatus: Number(statusInputs[Number(order.id)]),
                     });
                     updateOrderStatus(
-                      Number(order.orderID),
-                      Number(statusInputs[Number(order.orderID)])
+                      Number(order.id),
+                      Number(statusInputs[Number(order.id)])
                     );
                     window.location.reload();
                   }}

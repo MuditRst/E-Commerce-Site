@@ -13,7 +13,7 @@ function UserListActions() {
         try{
             const response = await deleteUser(userId);
             console.log("User deleted successfully:", response.data);
-            setAllUsers(allUsers.filter(user => user.userID !== userId));
+            setAllUsers(allUsers.filter(user => user.id !== userId));
         } catch (error) {
             console.error("Error deleting user:", error);
         }
@@ -25,11 +25,11 @@ function UserListActions() {
             <ul>
                 {allUsers.map((user) =>
                     user.role === "User" ? (
-                        <li key={user.userID}>
+                        <li key={user.id}>
                             <span>
-                                User ID: {user.userID}, Username: {user.username}
+                                User ID: {user.id}, Username: {user.username}
                             </span>
-                            <button onClick={() => handleDeleteUser(Number(user.userID))}>
+                            <button onClick={() => handleDeleteUser(Number(user.id))}>
                                 Delete
                             </button>
                         </li>

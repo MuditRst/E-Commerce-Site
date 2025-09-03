@@ -3,10 +3,10 @@ import { Orderstatus } from "./OrderStatus";
 import User from "./User";
 
 type Order = {
-    orderID: Key|number;
+    id: Key|string;
     item: string;
     quantity: number;
     orderStatus?: Orderstatus;
-    user : string | User;
+    userId : string | User;
 };
 export default Order;

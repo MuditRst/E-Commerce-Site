@@ -26,7 +26,7 @@ function KafkaLogsDashboard() {
             <h2>Kafka Logs Dashboard</h2>
                 <ul>
                     {logs.map((log , index) => (
-                        <li key={log.LogID ?? index}>
+                        <li key={log.id ?? index}>
                             <strong>Topic:</strong> {log.topic} <br />
                             <strong>Message:</strong> {log.message} <br />
                             <strong>Timestamp:</strong> {log.timestamp}
