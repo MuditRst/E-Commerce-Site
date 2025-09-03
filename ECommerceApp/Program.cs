@@ -156,6 +156,7 @@ app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders
     if (userIdclaim == null)
         return Results.Unauthorized();
     var userId = userIdclaim.Value;
+    Console.WriteLine($"Looking for user with ID {id} and UserId {userId}");
     var orders = await db.Orders.FirstOrDefaultAsync(o=> o.ID == id && o.UserId == userId);
 
     if (orders == null) return Results.NotFound();
@@ -200,7 +201,8 @@ app.MapDelete("/api/orders/{id}", async (string id,DBContext db, ClaimsPrincipal
     if (userIdclaim == null)
         return Results.Unauthorized();
     var userId = userIdclaim.Value;
-    var orders = await db.Orders.FindAsync(id,userId);
+    Console.WriteLine($"Looking for user with ID {id} and UserId {userId}");
+    var orders = await db.Orders.FirstOrDefaultAsync(o => o.ID == id && o.UserId == userId);
 
     if (orders == null) return Results.NotFound();
     if (orders.UserId == userId)
