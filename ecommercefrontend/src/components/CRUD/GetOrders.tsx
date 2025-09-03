@@ -4,7 +4,7 @@ import {getOrders } from "../../api";
 import Order from "../../Interface/Order";
 
 type GetOrdersProps = {
-    handleDeleteOrder: (orderID: number) => void;
+    handleDeleteOrder: (orderID: string) => void;
     handleUpdateOrder: (order: Order) => void;
 };
 
@@ -31,7 +31,7 @@ function GetOrders({ handleDeleteOrder, handleUpdateOrder }: GetOrdersProps) {
             <td>{order.orderStatus}</td>
             <td className="action-buttons">
               <button onClick={() => handleUpdateOrder(order)}>Edit</button>
-              <button className="delete" onClick={() => handleDeleteOrder(Number(order.id))}>Delete</button>
+              <button className="delete" onClick={() => handleDeleteOrder(order.id.toString())}>Delete</button>
             </td>
           </tr>
         ))}

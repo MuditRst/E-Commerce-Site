@@ -9,7 +9,7 @@ function UserListActions() {
             getUsers().then(res => {setAllUsers(res.data)}).catch(console.error);
         }, []);
 
-    const handleDeleteUser = async (userId: number) => {
+    const handleDeleteUser = async (userId: string) => {
         try{
             const response = await deleteUser(userId);
             console.log("User deleted successfully:", response.data);
@@ -29,7 +29,7 @@ function UserListActions() {
                             <span>
                                 User ID: {user.id}, Username: {user.username}
                             </span>
-                            <button onClick={() => handleDeleteUser(Number(user.id))}>
+                            <button onClick={() => handleDeleteUser(user.id.toString())}>
                                 Delete
                             </button>
                         </li>

@@ -58,11 +58,11 @@ function AdminDashBoard() {
                 <button
                   onClick={() => {
                     console.log("Updating Order Status:", {
-                      orderID: Number(order.id),
+                      orderID: order.id,
                       newStatus: Number(statusInputs[Number(order.id)]),
                     });
                     updateOrderStatus(
-                      Number(order.id),
+                      order.id.toString(),
                       Number(statusInputs[Number(order.id)])
                     );
                     window.location.reload();
