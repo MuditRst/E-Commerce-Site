@@ -1,10 +1,9 @@
 import { Orderstatus } from "./OrderStatus";
 
-type Order = {
-    id: string;
+type NewOrder = {
     item: string;
     quantity: number;
     orderStatus?: Orderstatus;
-    userId : string;
+    userId: string;
 };
-export default Order;
+export default NewOrder;

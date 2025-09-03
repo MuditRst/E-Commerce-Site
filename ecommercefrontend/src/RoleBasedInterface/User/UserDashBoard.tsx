@@ -6,6 +6,7 @@ import GetOrders from "../../components/CRUD/GetOrders";
 import UpdateOrder from "../../components/CRUD/UpdateOrders";
 import AddOrder from "../../components/CRUD/AddOrder";
 import "../../components/styles/userDashboard.css";
+import NewOrder from "../../Interface/NewOrder";
 
 function UserDashBoard(){
     const [orders, setOrders] = useState<Order[]>([]);
@@ -34,7 +35,7 @@ function UserDashBoard(){
         }
     };
 
-    const OnAddHandler= async (order:Order) => {
+    const OnAddHandler= async (order:NewOrder) => {
         try {
             const orderExists = orders.some(o => o.item === order.item);
             if (orderExists) {
@@ -58,7 +59,7 @@ function UserDashBoard(){
     const handleUpdateSubmit = async (order: Order) => {
         try {
             if (order.id !== undefined) {
-                const res = await updateOrder(String(order.id), {
+                const res = await updateOrder(order.id.toString(), {
                     item: order.item,
                     quantity: order.quantity,
                 });
