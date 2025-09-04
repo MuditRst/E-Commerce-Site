@@ -1,5 +1,14 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html"
-  }
+  },
+  "routes": [
+    {
+      "route": "/hubs/*",
+      "allowedMethods": ["GET", "POST"],
+      "forwardingGateway": {
+        "backendHost": "https://myproject-webapp.azurewebsites.net"
+      }
+    }
+  ]
 }
