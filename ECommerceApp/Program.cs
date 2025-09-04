@@ -114,24 +114,61 @@ if (app.Environment.IsDevelopment())
 app.MapHub<OrderHub>("/hubs/orders");
 
 // Orders CRUD endpoints
-app.MapGet("/api/orders", async (DBContext db) =>
+app.MapGet("/api/orders", async (DBContext db, ClaimsPrincipal claims) =>
 {
-    var orders = await db.Orders.ToListAsync();
-    var uniqueUserIds = orders.Select(o => o.UserId).Distinct().ToList();
-    var users = await db.Logins.Where(u => uniqueUserIds.Contains(u.ID)).ToListAsync();
-
-    var ordersWithUser = orders.Select(o => new
+    var userId = claims.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (userId == null)
     {
-        o.ID,
-        o.Item,
-        o.Quantity,
-        o.OrderStatus,
-        o.UserId,
-        User = users.FirstOrDefault(u => u.ID == o.UserId)?.Username
-    });
+        return Results.Unauthorized();
+    }
+
+    var ordersWithUser = await db.Orders
+        .Where(o => o.UserId == userId)
+        .Select(o => new
+        {
+            o.ID,
+            o.Item,
+            o.Quantity,
+            o.OrderStatus,
+            o.UserId,
+            User = db.Logins
+                .Where(u => u.ID == o.UserId)
+                .Select(u => u.Username)
+                .FirstOrDefault()
+        })
+        .ToListAsync();
 
     return Results.Ok(ordersWithUser);
-}).WithName("GetOrders");;
+
+}).RequireAuthorization().WithName("GetOrders");
+
+app.MapGet("/api/orders/all", async (DBContext db, ClaimsPrincipal claims) =>
+{
+    if (!claims.IsInRole("Admin"))
+    {
+        return Results.Unauthorized();
+    }
+
+    var orders = await db.Orders.ToListAsync();
+
+    var ordersWithUser = await db.Orders
+        .Select(o => new
+        {
+            o.ID,
+            o.Item,
+            o.Quantity,
+            o.OrderStatus,
+            o.UserId,
+            User = db.Logins
+                .Where(u => u.ID == o.UserId)
+                .Select(u => u.Username)
+                .FirstOrDefault()
+        })
+        .ToListAsync();
+
+    return Results.Ok(ordersWithUser);
+
+}).RequireAuthorization().WithName("GetAllOrders");
 
 app.MapPost("/api/orders", async (DBContext db, OrderRequest res, ClaimsPrincipal claims, KafkaProducerService kafkaProducer) =>
 {

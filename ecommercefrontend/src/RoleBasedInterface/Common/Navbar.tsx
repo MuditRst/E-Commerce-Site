@@ -37,7 +37,7 @@ import User from "../../Interface/User";
 
       <div className={`navbar-links ${isOpen ? "open" : ""}`}>
         <Link to="/">Home</Link>
-        <Link to="/userdashboard">User Dashboard</Link>
+        {!loading && user.role === "User" &&<Link to="/userdashboard">User Dashboard</Link>}
         {!loading && user.role === "Admin" && <Link to="/admindashboard">Admin Dashboard</Link>}
         <Link to="/kafkalogs">Kafka Logs</Link>
         <Link to="/login">Login</Link>

@@ -12,6 +12,9 @@ export const postOrder = (data: any) =>
 export const getOrders = () =>
   API.get("api/orders");
 
+export const getAllOrders = () =>
+  API.get("api/orders/all");
+
 export const deleteOrder = (id: string) =>
   API.delete(`api/orders/${id}`);
 

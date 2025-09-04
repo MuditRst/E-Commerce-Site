@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getOrders, updateOrderStatus } from "../../api";
+import { getAllOrders, updateOrderStatus } from "../../api";
 import Order from "../../Interface/Order";
 import RealTimeOrders from "./RealTimeOrders";
 import UserListActions from "./UserListActions";
@@ -21,7 +21,7 @@ function AdminDashBoard() {
   };
 
     useEffect(() => {
-            getOrders().then(res => {
+            getAllOrders().then(res => {
                 setOrders(res.data);
                 console.log("Fetched Orders:", res.data);
             }).catch(console.error);
