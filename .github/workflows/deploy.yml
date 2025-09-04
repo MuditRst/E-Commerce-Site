@@ -50,6 +50,7 @@ jobs:
           cd ecommercefrontend
           npm install
           npm run build
+          cp staticwebapp.config.json build/
 
       - name: Deploy to Azure Static Web App
         uses: Azure/static-web-apps-deploy@v1

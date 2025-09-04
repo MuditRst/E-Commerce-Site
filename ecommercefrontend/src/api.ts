@@ -22,7 +22,7 @@ export const updateOrder = (id: string, data: any) =>
   API.put(`api/orders/${id}`, data);
 
 export const updateOrderStatus = (id: string, orderStatus: Orderstatus) =>
-  API.put(`api/orders/${id}/status`, Number(orderStatus), {
+  API.put(`api/orders/${id}/status`, {newStatus : Number(orderStatus)}, {
     headers: { "Content-Type": "application/json" },
   });
 
