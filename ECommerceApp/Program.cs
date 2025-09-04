@@ -420,7 +420,8 @@ app.MapPost("/api/auth/logout", (HttpContext http) =>
 
 app.MapGet("/api/orders/stats", async(DBContext db)=>
 {
-    var stats = await db.Orders.GroupBy(o => o.OrderStatus).Select(g => new { Status = g.Key.ToString(), Count = g.Count() }).ToListAsync();
+    var allOrders = await db.Orders.ToListAsync();
+    var stats = allOrders.GroupBy(o => o.OrderStatus).Select(g => new { Status = g.Key.ToString(), Count = g.Count() }).ToList();
 
     return Results.Ok(stats);
 }).RequireAuthorization();

@@ -8,8 +8,9 @@ function RealTimeOrders() {
     const [refresh, setRefresh] = useState(0);
 
     useEffect(() => {
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
         const connection = new HubConnectionBuilder()
-        .withUrl("http://localhost:5097/hubs/orders",{withCredentials: true})
+        .withUrl(`${apiBaseUrl}/hubs/orders`,{withCredentials: true})
         .withAutomaticReconnect()
         .build();
         connection.start().then(()=> console.log("Connected to SignalR hub")).catch((err) => console.error("SignalR connection failed:", err));
