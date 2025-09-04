@@ -10,10 +10,10 @@ import "../../components/styles/Admindashboard.css";
 function AdminDashBoard() {
 
     const [orders, setOrders] = useState<Order[]>([]);
-    const [statusInputs, setStatusInputs] = useState<{ [key: number]: string }>({});
+    const [statusInputs, setStatusInputs] = useState<{ [key: string]: string }>({});
 
 
-    const handleStatusChange = (orderId: number, value: string) => {
+    const handleStatusChange = (orderId: string, value: string) => {
     setStatusInputs((prev) => ({
       ...prev,
       [orderId]: value,
@@ -46,7 +46,7 @@ function AdminDashBoard() {
               <div className="order-actions">
                 <select
                   value={statusInputs[Number(order.id)] ?? order.orderStatus}
-                  onChange={(e) => handleStatusChange(Number(order.id), e.target.value)}
+                  onChange={(e) => handleStatusChange(order.id.toString(), e.target.value)}
                 >
                   <option value={0}>Created</option>
                   <option value={1}>Pending</option>

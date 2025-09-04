@@ -9,6 +9,12 @@
       "forwardingGateway": {
         "backendHost": "https://myproject-webapp.azurewebsites.net"
       }
+    },
+    {
+      "route": "/api/*",
+      "forwardingGateway": {
+        "backendHost": "https://myproject-webapp.azurewebsites.net"
+      }
     }
   ]
 }
