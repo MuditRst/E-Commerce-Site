@@ -66,7 +66,6 @@ function UserDashBoard(){
                 console.log("Updated:", res.data);
                 setEditOrder(res.data);
                 setViewMode("showAllOrders");
-                window.location.reload();
             }
         } catch (err) {
         console.error("Update failed", err);
