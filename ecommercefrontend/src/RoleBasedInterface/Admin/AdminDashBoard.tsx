@@ -45,7 +45,7 @@ function AdminDashBoard() {
 
               <div className="order-actions">
                 <select
-                  value={statusInputs[Number(order.id)] ?? order.orderStatus}
+                  value={statusInputs[order.id] ?? order.orderStatus}
                   onChange={(e) => handleStatusChange(order.id.toString(), e.target.value)}
                 >
                   <option value={0}>Created</option>
@@ -56,14 +56,14 @@ function AdminDashBoard() {
                 </select>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     console.log("Updating Order Status:", {
                       orderID: order.id,
-                      newStatus: Number(statusInputs[Number(order.id)]),
+                      newStatus: Number(statusInputs[order.id]),
                     });
-                    updateOrderStatus(
+                    await updateOrderStatus(
                       order.id.toString(),
-                      Number(statusInputs[Number(order.id)])
+                      Number(statusInputs[order.id])
                     );
                     window.location.reload();
                   }}

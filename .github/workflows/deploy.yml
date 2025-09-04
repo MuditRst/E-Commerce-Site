@@ -51,6 +51,7 @@ jobs:
           npm install
           echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> .env.production
           npm run build
+          cp staticwebapp.config.json build/
 
       - name: Deploy to Azure Static Web App
         uses: Azure/static-web-apps-deploy@v1
