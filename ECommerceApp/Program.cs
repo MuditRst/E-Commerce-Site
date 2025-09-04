@@ -122,25 +122,32 @@ app.MapGet("/api/orders", async (DBContext db, ClaimsPrincipal claims) =>
         return Results.Unauthorized();
     }
 
-    var ordersWithUser = await db.Orders
+    var userDetails = await db.Logins
+        .Where(u => u.ID == userId)
+        .FirstOrDefaultAsync();
+
+    if (userDetails == null)
+    {
+        return Results.NotFound("User not found.");
+    }
+
+    var orders = await db.Orders
         .Where(o => o.UserId == userId)
-        .Select(o => new
-        {
-            o.ID,
-            o.Item,
-            o.Quantity,
-            o.OrderStatus,
-            o.UserId,
-            User = db.Logins
-                .Where(u => u.ID == o.UserId)
-                .Select(u => u.Username)
-                .FirstOrDefault()
-        })
         .ToListAsync();
 
-    return Results.Ok(ordersWithUser);
+    var ordersWithUser = orders.Select(o => new
+    {
+        o.ID,
+        o.Item,
+        o.Quantity,
+        o.OrderStatus,
+        o.UserId,
+        User = userDetails.Username
+    });
 
+    return Results.Ok(ordersWithUser);
 }).RequireAuthorization().WithName("GetOrders");
+
 
 app.MapGet("/api/orders/all", async (DBContext db, ClaimsPrincipal claims) =>
 {
@@ -150,24 +157,20 @@ app.MapGet("/api/orders/all", async (DBContext db, ClaimsPrincipal claims) =>
     }
 
     var orders = await db.Orders.ToListAsync();
+    var uniqueUserIds = orders.Select(o => o.UserId).Distinct().ToList();
+    var users = await db.Logins.Where(u => uniqueUserIds.Contains(u.ID)).ToListAsync();
 
-    var ordersWithUser = await db.Orders
-        .Select(o => new
-        {
-            o.ID,
-            o.Item,
-            o.Quantity,
-            o.OrderStatus,
-            o.UserId,
-            User = db.Logins
-                .Where(u => u.ID == o.UserId)
-                .Select(u => u.Username)
-                .FirstOrDefault()
-        })
-        .ToListAsync();
+    var ordersWithUser = orders.Select(o => new
+    {
+        o.ID,
+        o.Item,
+        o.Quantity,
+        o.OrderStatus,
+        o.UserId,
+        User = users.FirstOrDefault(u => u.ID == o.UserId)?.Username
+    });
 
     return Results.Ok(ordersWithUser);
-
 }).RequireAuthorization().WithName("GetAllOrders");
 
 app.MapPost("/api/orders", async (DBContext db, OrderRequest res, ClaimsPrincipal claims, KafkaProducerService kafkaProducer) =>
