@@ -215,7 +215,7 @@ app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders
 
 }).RequireAuthorization();
 
-app.MapPut("/api/orders/{id}/status", async (string id, DBContext db, [FromBody] OrderStatus newStatus, ClaimsPrincipal user) =>
+app.MapPut("/api/orders/{id}/status", async (string id, DBContext db, [FromBody] OrderStatusDTO newStatus, ClaimsPrincipal user) =>
 {
     var order = await db.Orders.FindAsync(id,user.FindFirstValue(ClaimTypes.NameIdentifier));
     if (order == null) return Results.NotFound();
@@ -224,12 +224,12 @@ app.MapPut("/api/orders/{id}/status", async (string id, DBContext db, [FromBody]
     {
         OrderID = order.ID,
         UserId = order.UserId,
-        OrderStatus = newStatus,
+        OrderStatus = newStatus.newStatus,
         ChangedBy = user.Identity?.Name,
         ChangedAt = DateTime.UtcNow
     });
 
-    order.OrderStatus = newStatus;
+    order.OrderStatus = newStatus.newStatus;
 
     await db.SaveChangesAsync();
     return Results.Ok(order);
@@ -454,3 +454,4 @@ catch (Exception ex)
 }
 
 public record OrderRequest(string Item,int Quantity);
+public record OrderStatusDTO(OrderStatus newStatus);

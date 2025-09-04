@@ -88,7 +88,7 @@ function AdminDashBoard() {
       </div>
 
       <div className="grid cols-2" style={{ marginTop: "20px" }}>
-        <div className="section">
+        <div className="section" style={{ height:"450px" }}>
           <h3>Real-Time Orders</h3>
           <RealTimeOrders />
         </div>
