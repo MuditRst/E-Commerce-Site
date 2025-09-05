@@ -8,7 +8,7 @@ function RealTimeOrders() {
     const [refresh, setRefresh] = useState(0);
 
     useEffect(() => {
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+        const apiBaseUrl = process.env.REACT_APP_API_URL;
         const connection = new HubConnectionBuilder()
         .withUrl(`${apiBaseUrl}/hubs/orders`,{withCredentials: true})
         .withAutomaticReconnect()
