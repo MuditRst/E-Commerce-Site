@@ -1,8 +1,8 @@
 import { Orderstatus } from "./OrderStatus";
 
 type NewOrder = {
-    item: string;
-    quantity: number;
+    Item: string;
+    Quantity: number;
     orderStatus?: Orderstatus;
     userId: string;
 };

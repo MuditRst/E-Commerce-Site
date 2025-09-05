@@ -37,13 +37,13 @@ function UserDashBoard(){
 
     const OnAddHandler= async (order:NewOrder) => {
         try {
-            const orderExists = orders.some(o => o.item === order.item);
+            const orderExists = orders.some(o => o.Item === order.Item);
             if (orderExists) {
-                console.error(`Order with item ${order.item} already exists.`);
+                console.error(`Order with item ${order.Item} already exists.`);
                 setViewMode("showAllOrders");
                 return;
             }
-            const res = await postOrder({ Item: order.item, quantity: order.quantity });
+            const res = await postOrder({ Item: order.Item, Quantity: order.Quantity });
             console.log("Order submitted:", res.data);
             setViewMode("showAllOrders");
         } catch (err) {
@@ -60,8 +60,8 @@ function UserDashBoard(){
         try {
             if (order.id !== undefined) {
                 const res = await updateOrder(order.id.toString(), {
-                    item: order.item,
-                    quantity: order.quantity,
+                    Item: order.Item,
+                    Quantity: order.Quantity,
                 });
                 console.log("Updated:", res.data);
                 setEditOrder(res.data);

@@ -37,8 +37,8 @@ function AdminDashBoard() {
             <li key={order.id}>
               <div className="order-meta">
                 <span className="chip">ID: {order.id}</span>
-                <span className="chip">Item: {order.item}</span>
-                <span className="chip">Qty: {order.quantity}</span>
+                <span className="chip">Item: {order.Item}</span>
+                <span className="chip">Qty: {order.Quantity}</span>
                 <span className="chip status">{order.orderStatus}</span>
                 <span className="chip">User: {order.userId?.toString()}</span>
               </div>
