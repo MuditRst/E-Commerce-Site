@@ -24,8 +24,8 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
     const userDetails = userDetailsResponse?.data;
 
     const newOrder: NewOrder = {
-      item,
-      quantity,
+      Item: item,
+      Quantity : quantity,
       userId: userDetails?.userID
     };
 
@@ -40,13 +40,13 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
           type="text"
           name="orderName"
           placeholder="Order Name"
-          defaultValue={orderToAdd?.item}
+          defaultValue={orderToAdd?.Item}
         />
         <input
           type="number"
           name="quantity"
           placeholder="Quantity"
-          defaultValue={orderToAdd?.quantity}
+          defaultValue={orderToAdd?.Quantity}
         />
         <button type="submit">Add Order</button>
       </form>
