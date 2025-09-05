@@ -217,7 +217,11 @@ app.MapPut("/api/orders/{id}", async (string id, DBContext db, [FromBody] Orders
 
 app.MapPut("/api/orders/{id}/status", async (string id, DBContext db, [FromBody] OrderStatusDTO newStatus, ClaimsPrincipal user) =>
 {
-    var order = await db.Orders.FindAsync(id,user.FindFirstValue(ClaimTypes.NameIdentifier));
+
+    if (!user.IsInRole("Admin"))
+        return Results.Unauthorized();
+    
+    var order = await db.Orders.Where(o => o.ID == id).FirstOrDefaultAsync();
     if (order == null) return Results.NotFound();
 
     db.OrderStatusHistories.Add(new OrderStatusHistory
