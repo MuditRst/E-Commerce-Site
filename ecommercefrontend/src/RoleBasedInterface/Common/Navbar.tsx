@@ -31,7 +31,9 @@ import { useAuth } from "../../components/Authentication/AuthContext";
         {user?.role === "Admin" && <Link to="/admindashboard">Admin Dashboard</Link>}
       </div>
       ) : (
-      <Link to="/login">Login</Link>
+      <div className={`navbar-links ${isOpen ? "open" : ""}`}>
+        <Link to="/login">Login</Link>
+      </div>
       )}
 
       <div 
