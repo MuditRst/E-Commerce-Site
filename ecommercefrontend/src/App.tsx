@@ -7,11 +7,13 @@ import AdminDashBoard from "./RoleBasedInterface/Admin/AdminDashBoard";
 import ErrorPage from "./components/ErrorPage/Error";
 import Navbar from "./RoleBasedInterface/Common/Navbar";
 import ForgetPassword from "./components/Authentication/ForgetPassword";
+import { AuthProvider } from "./components/Authentication/AuthContext";
 
 function App() {
   return (
   
     <Router>
+      <AuthProvider>
       <Navbar />
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
@@ -34,6 +36,7 @@ function App() {
         <Route path ="/error" element={<ErrorPage message="An error occurred. Please try again later." />} />
         <Route path="*" element={<ErrorPage message="404 - Page Not Found" />} />
       </Routes>
+      </AuthProvider>
     </Router>
   );
 }
