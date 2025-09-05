@@ -1,30 +1,19 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import "../../components/styles/Navbar.css";
 import { Link, useNavigate } from "react-router-dom";
-import { getUserDetails, logout } from "../../components/Authentication/LoginAPI";
-import User from "../../Interface/User";
+import { logout } from "../../components/Authentication/LoginAPI";
+import { useAuth } from "../../components/Authentication/AuthContext";
 
  function Navbar() {
     const navigate = useNavigate();
+    const { user, setUser } = useAuth();
 
     const [isOpen, setIsOpen] = useState(false);
-    const [user,setUser] = useState<User>({} as User);
-    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getUserDetails()
-      .then(res => {
-        setUser(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, []);
   const handleLogout = async () => {
       try {
         await logout();
+        setUser(null);
         navigate("/login");
       } catch (error) {
         console.error("Logout failed:", error);
@@ -35,13 +24,15 @@ import User from "../../Interface/User";
     <nav className="navbar">
       <div className="navbar-brand">E-Commerce</div>
 
+      {user ? (
       <div className={`navbar-links ${isOpen ? "open" : ""}`}>
         <Link to="/">Home</Link>
-        {!loading && user.role === "User" &&<Link to="/userdashboard">User Dashboard</Link>}
-        {!loading && user.role === "Admin" && <Link to="/admindashboard">Admin Dashboard</Link>}
-        <Link to="/kafkalogs">Kafka Logs</Link>
-        <Link to="/login">Login</Link>
+        {user?.role === "User" && <Link to="/userdashboard">User Dashboard</Link>}
+        {user?.role === "Admin" && <Link to="/admindashboard">Admin Dashboard</Link>}
       </div>
+      ) : (
+      <Link to="/login">Login</Link>
+      )}
 
       <div 
         className={`hamburger ${isOpen ? "active" : ""}`} 

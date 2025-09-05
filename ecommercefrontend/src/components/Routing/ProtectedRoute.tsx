@@ -1,40 +1,27 @@
-import React, { JSX, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getUserDetails } from "../Authentication/LoginAPI";
+import  { JSX } from "react";
+import { useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "../Authentication/AuthContext";
 
 type ProtectedRouteProps = {
   children: JSX.Element;
-  requiredRole?: string; // optional, for role-based routes
+  requiredRole?: string;
 };
 
 function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const navigate = useNavigate();
-  const [isChecking, setIsChecking] = useState(true);
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    let isMounted = true;
+  if (loading) {
+    return <p className="text-center mt-8">Loading...</p>;
+  }
 
-    getUserDetails()
-      .then((user) => {
-        if (!isMounted) return;
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
-        if (requiredRole && user.data.role !== requiredRole) {
-          navigate("/unauthorized");
-          return;
-        }
-
-        setIsChecking(false);
-      })
-      .catch(() => {
-        if (isMounted) navigate("/login");
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [navigate, requiredRole]);
-
-  if (isChecking) return <p>Loading...</p>;
+  if (requiredRole && user.role !== requiredRole) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return children;
 }

@@ -2,9 +2,11 @@ import React from "react";
 import {  login } from "./LoginAPI";
 import "../styles/Login.css";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "./AuthContext";
 
 function Login() {
   const navigate = useNavigate();
+  const {setUser} = useAuth();
 
   const HandleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -13,8 +15,8 @@ function Login() {
 
     try {
       const res = await login(username, password);
-
       if (res.status === 200) {
+        setUser(res.data);
         const { role } = res.data;
         if (role === "User") {
           console.log("Login successful as User");
