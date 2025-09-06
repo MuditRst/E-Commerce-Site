@@ -26,8 +26,8 @@ function GetOrders({ handleDeleteOrder, handleUpdateOrder }: GetOrdersProps) {
       <tbody>
         {orders.map(order => (
           <tr key={order.id}>
-            <td>{order.Item}</td>
-            <td>{order.Quantity}</td>
+            <td>{order.item}</td>
+            <td>{order.quantity}</td>
             <td>{order.orderStatus}</td>
             <td className="action-buttons">
               <button onClick={() => handleUpdateOrder(order)}>Edit</button>

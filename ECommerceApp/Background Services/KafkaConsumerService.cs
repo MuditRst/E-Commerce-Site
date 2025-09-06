@@ -65,7 +65,11 @@ public class KafkaConsumerService : BackgroundService
                     // Deserialize and save Order
                     var order = JsonSerializer.Deserialize<Orders>(
                         result.Message.Value,
-                        new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } }
+                        new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            Converters = { new JsonStringEnumConverter() }
+                        }
                     );
 
                     if (order != null)
