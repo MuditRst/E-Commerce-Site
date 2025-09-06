@@ -2,8 +2,8 @@ import { Orderstatus } from "./OrderStatus";
 
 type Order = {
     id: string;
-    Item: string;
-    Quantity: number;
+    item: string;
+    quantity: number;
     orderStatus?: Orderstatus;
     userId : string;
 };

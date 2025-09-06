@@ -37,7 +37,7 @@ function UserDashBoard(){
 
     const OnAddHandler= async (order:NewOrder) => {
         try {
-            const orderExists = orders.some(o => o.Item === order.Item);
+            const orderExists = orders.some(o => o.item === order.Item);
             if (orderExists) {
                 console.error(`Order with item ${order.Item} already exists.`);
                 setViewMode("showAllOrders");
@@ -60,8 +60,8 @@ function UserDashBoard(){
         try {
             if (order.id !== undefined) {
                 const res = await updateOrder(order.id.toString(), {
-                    Item: order.Item,
-                    Quantity: order.Quantity,
+                    item: order.item,
+                    quantity: order.quantity,
                 });
                 console.log("Updated:", res.data);
                 setEditOrder(res.data);

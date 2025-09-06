@@ -38,14 +38,14 @@ function UpdateOrder({ orderToEdit, handleUpdateOrder }: UpdateOrdersProps) {
         <input
           type="text"
           name="item"
-          value={order.Item}
+          value={order.item}
           onChange={handleChange}
           placeholder="Order Name"
         />
         <input
           type="number"
           name="quantity"
-          value={order.Quantity}
+          value={order.quantity}
           onChange={handleChange}
           placeholder="Quantity"
         />

@@ -40,13 +40,13 @@ function AddOrder({ handleAddOrder, orderToAdd }: AddOrderProps) {
           type="text"
           name="orderName"
           placeholder="Order Name"
-          defaultValue={orderToAdd?.Item}
+          defaultValue={orderToAdd?.item}
         />
         <input
           type="number"
           name="quantity"
           placeholder="Quantity"
-          defaultValue={orderToAdd?.Quantity}
+          defaultValue={orderToAdd?.quantity}
         />
         <button type="submit">Add Order</button>
       </form>
