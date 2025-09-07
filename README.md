@@ -1,6 +1,6 @@
 # 🛒 Real-Time Distributed Order Management System
 
-A full-stack **E-Commerce Order Management Platform** built with **ASP.NET Core, SQL Server, Kafka, SignalR, and React**, deployed on **Azure**.  
+A full-stack **E-Commerce Order Management Platform** built with **ASP.NET Core, CosmosDB, Kafka, SignalR, and React**, deployed on **Azure**.  
 The system supports real-time order updates, admin dashboards, and scalable event-driven processing with Kafka.
 
 ---
