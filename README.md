@@ -68,7 +68,7 @@ flowchart LR
     KafkaConsumer --> Logs
     
     KafkaConsumer --> SignalR[SignalR Hub]
-    SignalR --> Admin[Admin Dashboard]
+    SignalR --> Admin[Admin Dashboard] 
 ```
 
 ## 🔗 Live Demo - https://orange-flower-079d22910.2.azurestaticapps.net/
