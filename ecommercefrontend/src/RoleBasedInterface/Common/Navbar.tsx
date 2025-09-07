@@ -26,7 +26,7 @@ import { useAuth } from "../../components/Authentication/AuthContext";
 
       {user ? (
       <div className={`navbar-links ${isOpen ? "open" : ""}`}>
-        <Link to="/">Home</Link>
+        <Link to={`/${user.role}dashboard`}>Home</Link>
         {user?.role === "User" && <Link to="/userdashboard">User Dashboard</Link>}
         {user?.role === "Admin" && <Link to="/admindashboard">Admin Dashboard</Link>}
       </div>
