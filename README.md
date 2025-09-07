@@ -52,14 +52,14 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 
 ```mermaid
 flowchart LR
-    User[User Frontend (React)] --> API[ASP.NET Core API]
-    API --> DB[(SQL Server - Orders)]
-    API --> KafkaProducer[Kafka Producer]
-    KafkaProducer --> EventHub[(Azure Event Hub / Kafka Topic)]
-    EventHub --> KafkaConsumer[Kafka Consumer Service]
-    KafkaConsumer --> Cosmos[(CosmosDB - Logs)]
-    KafkaConsumer --> SignalR[SignalR Hub]
-    SignalR --> Admin[Admin Dashboard]
+    User["User Frontend (React)"] --> API["ASP.NET Core API"]
+    API --> DB[("SQL Server - Orders")]
+    API --> KafkaProducer["Kafka Producer"]
+    KafkaProducer --> EventHub[("Azure Event Hub / Kafka Topic")]
+    EventHub --> KafkaConsumer["Kafka Consumer Service"]
+    KafkaConsumer --> Cosmos[("CosmosDB - Logs")]
+    KafkaConsumer --> SignalR["SignalR Hub"]
+    SignalR --> Admin["Admin Dashboard"]
 ```
 
 ## 🔗 Live Demo - https://orange-flower-079d22910.2.azurestaticapps.net/
