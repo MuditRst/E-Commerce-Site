@@ -31,7 +31,7 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 
 ### ✅ Architecture Features
 - Event-driven with **Kafka Producer + Consumer**  
-- Orders & logs persisted in **SQL Server + Cosmos DB**  
+- Orders & logs persisted in **Cosmos DB**  
 - Scalable microservice-friendly design  
 - Cloud-native deployment on **Azure**  
 
