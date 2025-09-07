@@ -42,7 +42,7 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 - **Frontend**: React, TypeScript, TailwindCSS  
 - **Backend**: ASP.NET Core 8, SignalR, EF Core, JWT Auth  
 - **Messaging**: Apache Kafka (Azure Event Hub)  
-- **Database**: SQL Server (Orders), Cosmos DB (Logs)  
+- **Database**: CosmosDB (Orders), Cosmos DB (Logs)  
 - **Cloud**: Azure App Services, Azure Event Hub  
 - **Other Tools**: Swagger (API docs), Docker (containerization)  
 
@@ -52,14 +52,25 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 
 ```mermaid
 flowchart LR
-    User["User Frontend (React)"] --> API["ASP.NET Core API"]
-    API --> DB[("SQL Server - Orders")]
-    API --> KafkaProducer["Kafka Producer"]
-    KafkaProducer --> EventHub[("Azure Event Hub / Kafka Topic")]
-    EventHub --> KafkaConsumer["Kafka Consumer Service"]
-    KafkaConsumer --> Cosmos[("CosmosDB - Logs")]
-    KafkaConsumer --> SignalR["SignalR Hub"]
-    SignalR --> Admin["Admin Dashboard"]
+    User[User Frontend (React)] --> API[ASP.NET Core API]
+    API --> KafkaProducer[Kafka Producer]
+    KafkaProducer --> EventHub[(Azure Event Hub / Kafka Topic)]
+    EventHub --> KafkaConsumer[Kafka Consumer Service]
+
+    %% CosmosDB containers
+    subgraph CosmosDB[Azure Cosmos DB]
+        OrdersContainer[(Orders Container)]
+        UsersContainer[(Users Container)]
+        LogsContainer[(Kafka Logs Container)]
+    end
+
+    API --> UsersContainer
+    API --> OrdersContainer
+    KafkaConsumer --> LogsContainer
+    
+    KafkaConsumer --> SignalR[SignalR Hub]
+    SignalR --> Admin[Admin Dashboard]
+
 ```
 
 ## 🔗 Live Demo - https://orange-flower-079d22910.2.azurestaticapps.net/
