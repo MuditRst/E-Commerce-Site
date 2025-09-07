@@ -21,7 +21,7 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 
 ### ✅ User Features
 - Place new orders  
-- Track order status in real-time via **SignalR**  
+- Update and Delete orders  
 - Secure login & authentication  
 
 ### ✅ Admin Features
