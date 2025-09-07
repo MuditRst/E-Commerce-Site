@@ -52,7 +52,7 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 
 ```mermaid
 flowchart LR
-    User[Frontend (React)] --> API[ASP.NET Core API]
+    User[Frontend (React)] --> API["ASP.NET Core API"]
     API --> KafkaProducer[Kafka Producer]
     KafkaProducer --> EventHub[(Azure Event Hub / Kafka Topic)]
     EventHub --> KafkaConsumer[Kafka Consumer Service]
