@@ -52,30 +52,30 @@ This project demonstrates how to build a modern, cloud-ready, event-driven syste
 
 ```mermaid
 flowchart TD
-    User[Frontend (React)] --> API[ASP.NET Core API]
-    API --> KafkaProducer[Kafka Producer]
-    KafkaProducer --> EventHub[(Azure Event Hub / Kafka Topic)]
-    EventHub --> KafkaConsumer[Kafka Consumer Service]
+    UserFE[Frontend React] --> APIBackend[ASP.NET Core API]
+    APIBackend --> KafkaProd[Kafka Producer]
+    KafkaProd --> EventHub[Azure Event Hub / Kafka Topic]
+    EventHub --> KafkaCons[Kafka Consumer Service]
 
     subgraph CosmosDB[Azure Cosmos DB]
-        Orders[(Orders Container)]
-        Users[(Users Container)]
-        Logs[(Kafka Logs Container)]
+        OrdersContainer[Orders Container]
+        UsersContainer[Users Container]
+        LogsContainer[Kafka Logs Container]
     end
 
-    API -- Stores data --> Users
-    API -- Stores data --> Orders
-    KafkaConsumer -- Consumes order event --> Processor[Order Processor Microservice]
-    Processor -- Processes and logs --> Logs
-    Processor -- Notifies --> SignalR[SignalR Hub]
-    SignalR --> Admin[Admin Dashboard]
+    APIBackend -- Stores data --> UsersContainer
+    APIBackend -- Stores data --> OrdersContainer
+    KafkaCons -- Consumes order event --> Processor[Order Processor Microservice]
+    Processor -- Processes and logs --> LogsContainer
+    Processor -- Notifies --> SignalRHub[SignalR Hub]
+    SignalRHub --> AdminDash[Admin Dashboard]
 
     subgraph KafkaProducerFlow[Producer Flow]
-        API -- Publishes order-created event --> KafkaProducer
+        APIBackend -- Publishes order-created event --> KafkaProd
     end
 
     subgraph KafkaConsumerFlow[Consumer Flow]
-        KafkaConsumer -- Consumes order-created event --> Processor
+        KafkaCons -- Consumes order-created event --> Processor
     end
 ```
 
