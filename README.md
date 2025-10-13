@@ -78,10 +78,3 @@ flowchart TD
         KafkaCons -- Consumes order-created event --> Processor
     end
 ```
-
-## 🔗 Live Demo - https://orange-flower-079d22910.2.azurestaticapps.net/
-
-## 🔑 Demo Admin Account For quick access to the Admin Dashboard, you can use the pre-created admin credentials:
-Username: admin Password: admin123 
-
-## ⚠️ Note: This account is only for demo purposes. In a production system, admin roles would be assigned securely via role-based access control (RBAC).
